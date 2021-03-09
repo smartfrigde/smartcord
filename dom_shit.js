@@ -1,14 +1,21 @@
-const path = window.require('path');
-const fs = window.require('fs');
-const electron = window.require('electron');
-const Module =  window.require('module').Module;
-Module.globalPaths.push(path.resolve(electron.remote.app.getAppPath(), 'node_modules'));
-const currentWindow = electron.remote.getCurrentWindow();
-if (currentWindow.__preload) {
-    process.electronBinding('command_line').appendSwitch('preload', currentWindow.__preload);
-    electron.contextBridge.exposeInMainWorld = (key, val) => window[key] = val; // Expose DiscordNative
-    require(currentWindow.__preload);
+const path = require('path');
+const fs = require('fs');
+const electron = require('electron');
+
+const mainProcessInfo = {
+    originalNodeModulesPath: electron.ipcRenderer.sendSync('main-process-info', 'original-node-modules-path'),
+    originalPreloadScript: electron.ipcRenderer.sendSync('main-process-info', 'original-preload-script')
+};
+const Module =  require('module');
+Module.globalPaths.push(mainProcessInfo.originalNodeModulesPath);
+if (mainProcessInfo.originalPreloadScript) {
+    process.electronBinding('command_line').appendSwitch('preload', mainProcessInfo.originalPreloadScript);
+    // This hack is no longer needed due to context isolation having to be on
+    //electron.contextBridge.exposeInMainWorld = (key, val) => window[key] = val; // Expose DiscordNative
+    require(mainProcessInfo.originalPreloadScript);
 }
+
+//electron.ipcRenderer.sendSync('current-web-contents');
 
 //Get inject directory
 if (!process.env.injDir) process.env.injDir = __dirname;
@@ -17,23 +24,23 @@ if (!process.env.injDir) process.env.injDir = __dirname;
 const c = {
     log: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.log(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.log('%c[SmartCord]', 'color: red;', msg);
+            console.log(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.log('%c[EnhancedDiscord]', 'color: red;', msg);
     },
     info: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.info(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.info('%c[SmartCord]', 'color: red;', msg);
+            console.info(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.info('%c[EnhancedDiscord]', 'color: red;', msg);
     },
     warn: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.warn(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.warn('%c[SmartCord]', 'color: red;', msg);
+            console.warn(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.warn('%c[EnhancedDiscord]', 'color: red;', msg);
     },
     error: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.error(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.error('%c[SmartCord]', 'color: red;', msg);
+            console.error(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.error('%c[EnhancedDiscord]', 'color: red;', msg);
     },
     sleep: function(ms) {
         return new Promise(resolve => {
@@ -83,8 +90,8 @@ Object.defineProperty(ED, 'config', {
 function loadPlugin(plugin) {
     try {
         if (plugin.preload)
-        console.log(`%c[SmartCord] %c[PRELOAD] %cLoading plugin %c${plugin.name}`, 'color: red;', 'color: yellow;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
-        else console.log(`%c[SmartCord] %cLoading plugin %c${plugin.name}`, 'color: red;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
+            console.log(`%c[EnhancedDiscord] %c[PRELOAD] %cLoading plugin %c${plugin.name}`, 'color: red;', 'color: yellow;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
+        else console.log(`%c[EnhancedDiscord] %cLoading plugin %c${plugin.name}`, 'color: red;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
         plugin.load();
     } catch(err) {
         c.error(`Failed to load:\n${err.stack}`, plugin);
@@ -122,13 +129,16 @@ process.once('loaded', async () => {
     ED.plugins = plugins;
     c.log(`Plugins validated.`);
 
-	while (!window.webpackJsonp)
-		await c.sleep(100); // wait until this is loaded in order to use it for modules
-
+    // work-around to wait for webpack
+    while (true) {
+        await c.sleep(100);
+        if(electron.webFrame.top.context.window && electron.webFrame.top.context.window.webpackJsonp) break;
+    };
+    
     ED.webSocket = window._ws;
 
-	/* Add helper functions that make plugins easy to create */
-	window.req = window.webpackJsonp.push([[], {
+    /* Add helper functions that make plugins easy to create */
+	window.req = electron.webFrame.top.context.window.webpackJsonp.push([[], {
         '__extra_id__': (module, exports, req) => module.exports = req
 	}, [['__extra_id__']]]);
 	delete window.req.m['__extra_id__'];
@@ -164,27 +174,32 @@ process.once('loaded', async () => {
     c.log(`Modules done loading (${Object.keys(window.req.c).length})`);
 
     if (ED.config.bdPlugins) {
-        await require('./bd_shit').setup(currentWindow);
-        c.log(`Preparing BD plugins...`);
-        for (const i in pluginFiles) {
-            if (!pluginFiles[i].endsWith('.js') || !pluginFiles[i].endsWith('.plugin.js')) continue;
-            let p;
-            const pName = pluginFiles[i].replace(/\.js$/, '');
-            try {
-                p = require(path.join(process.env.injDir, 'plugins', pName));
-                if (typeof p.name !== 'string' || typeof p.load !== 'function') {
-                    throw new Error('Plugin must have a name and load() function.');
+        try {
+            await require('./bd_shit').setup();
+            c.log(`Preparing BD plugins...`);
+            for (const i in pluginFiles) {
+                if (!pluginFiles[i].endsWith('.js') || !pluginFiles[i].endsWith('.plugin.js')) continue;
+                let p;
+                const pName = pluginFiles[i].replace(/\.js$/, '');
+                try {
+                    p = require(path.join(process.env.injDir, 'plugins', pName));
+                    if (typeof p.name !== 'string' || typeof p.load !== 'function') {
+                        throw new Error('Plugin must have a name and load() function.');
+                    }
+                    plugins[pName] = Object.assign(p, {id: pName});
                 }
-                plugins[pName] = Object.assign(p, {id: pName});
+                catch (err) {
+                    c.warn(`Failed to load ${pluginFiles[i]}: ${err}\n${err.stack}`, p);
+                }
             }
-            catch (err) {
-                c.warn(`Failed to load ${pluginFiles[i]}: ${err}\n${err.stack}`, p);
+            for (const id in plugins) {
+                if (!plugins[id] || !plugins[id].name || typeof plugins[id].load !== 'function') {
+                    c.info(`Skipping invalid plugin: ${id}`); delete plugins[id]; continue;
+                }
             }
         }
-        for (const id in plugins) {
-            if (!plugins[id] || !plugins[id].name || typeof plugins[id].load !== 'function') {
-                c.info(`Skipping invalid plugin: ${id}`); delete plugins[id]; continue;
-            }
+        catch (err) {
+            c.warn(`Failed to load BD plugins support: ${err}\n${err.stack}`);
         }
     }
 
@@ -212,16 +227,10 @@ process.once('loaded', async () => {
         window.fixedShowToken(); // prevent you from being logged out for no reason
 
     // change the console warning to be more fun
-    const wc = require('electron').remote.getCurrentWebContents();
-    wc.removeAllListeners('devtools-opened');
-    wc.on('devtools-opened', () => {
-        console.log('%cHold Up!', 'color: #FF5200; -webkit-text-stroke: 2px black; font-size: 72px; font-weight: bold;');
-        console.log('%cIf you\'re reading this, you\'re probably smarter than most Discord developers.', 'font-size: 16px;');
-        console.log('%cPasting anything in here could actually improve the Discord client.', 'font-size: 18px; font-weight: bold; color: red;');
-        console.log('%cUnless you understand exactly what you\'re doing, keep this window open to browse our bad code.', 'font-size: 16px;');
-        console.log('%cIf you don\'t understand exactly what you\'re doing, you should come work with us: https://discordapp.com/jobs', 'font-size: 16px;');
-        console.log('%cSmartCord/Discord Developers are not responsible for you pasting random shit here.', 'font-size: 16px;');
-    });
+    electron.ipcRenderer.invoke('custom-devtools-warning');
+    
+    // expose stuff for devtools
+    Object.assign(electron.webFrame.top.context.window, {ED, EDApi, BdApi});
 });
 
 
@@ -447,14 +456,14 @@ window.EDApi = window.BdApi = class EDApi {
         }
         const {before, after, instead, once = false, silent = false, force = false} = options;
         const displayName = options.displayName || what.displayName || what.name || what.constructor ? (what.constructor.displayName || what.constructor.name) : null;
-        if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+        if (!silent) console.log(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
         if (!what[methodName]) {
             if (force) what[methodName] = function() {};
-            else return console.warn(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
+            else return console.warn(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
         }
         const origMethod = what[methodName];
         const cancel = () => {
-            if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+            if (!silent) console.log(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
             what[methodName] = origMethod;
         };
         what[methodName] = function() {

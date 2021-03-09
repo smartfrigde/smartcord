@@ -1,3 +1,4 @@
+require('./main_process_shit');
 const electron = require('electron');
 const path = require('path');
 electron.app.commandLine.appendSwitch("no-force-async-hooks-checks");
@@ -11,22 +12,20 @@ electron.session.defaultSession.webRequest.onHeadersReceived(function(details, c
 
 class BrowserWindow extends electron.BrowserWindow {
     constructor(originalOptions) {
-        if (!originalOptions || !originalOptions.webPreferences || !originalOptions.title) return super(originalOptions); // eslint-disable-line constructor-super
+        let win = new electron.BrowserWindow(originalOptions);
+        if (!originalOptions || !originalOptions.webPreferences || !originalOptions.title) return win; // eslint-disable-line constructor-super
         const originalPreloadScript = originalOptions.webPreferences.preload;
 
-        // Make sure Node integration is enabled
-        originalOptions.webPreferences.nodeIntegration = true;
-        // Make sure remote module is enabled
-        originalOptions.webPreferences.enableRemoteModule = true;
-        // Make sure context isolation is disabled
-        originalOptions.webPreferences.contextIsolation = false;
         originalOptions.webPreferences.preload = path.join(process.env.injDir, 'dom_shit.js');
         originalOptions.webPreferences.transparency = true;
 
-        super(originalOptions);
-        this.__preload = originalPreloadScript;
+        win = new electron.BrowserWindow(originalOptions);
+        win.webContents.__preload = originalPreloadScript;
+        return win;
     }
 }
+
+BrowserWindow.webContents;
 
 const electron_path = require.resolve('electron');
 Object.assign(BrowserWindow, electron.BrowserWindow); // Assigns the new chrome-specific ones
