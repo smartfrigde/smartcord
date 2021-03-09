@@ -46,7 +46,7 @@ class Plugin {
      * @param {...string} msg - Message to be logged
      */
     log (...msg) {
-        console.log(`%c[EnhancedDiscord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
+        console.log(`%c[SmartCord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
     }
 
     /**
@@ -54,7 +54,7 @@ class Plugin {
      * @param {...string} msg - Message to be logged
      */
     info (...msg) {
-        console.info(`%c[EnhancedDiscord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
+        console.info(`%c[SmartCord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
     }
 
     /**
@@ -62,7 +62,7 @@ class Plugin {
      * @param {...string} msg - Message to be logged
      */
     warn (...msg) {
-        console.warn(`%c[EnhancedDiscord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
+        console.warn(`%c[SmartCord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
     }
 
     /**
@@ -70,7 +70,7 @@ class Plugin {
      * @param {...string} msg - Message to be logged
      */
     error (...msg) {
-        console.error(`%c[EnhancedDiscord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
+        console.error(`%c[SmartCord] %c[${this.name}]`, 'color: red;', `color: ${this.color}`, ...msg);
     }
 
     /**
