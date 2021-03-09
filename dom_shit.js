@@ -24,23 +24,23 @@ if (!process.env.injDir) process.env.injDir = __dirname;
 const c = {
     log: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.log(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.log('%c[EnhancedDiscord]', 'color: red;', msg);
+            console.log(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.log("%c[SmartCord]", "color: red;", msg);
     },
     info: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.info(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.info('%c[EnhancedDiscord]', 'color: red;', msg);
+            console.info(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.info("%c[SmartCord]", "color: red;", msg);
     },
     warn: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.warn(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.warn('%c[EnhancedDiscord]', 'color: red;', msg);
+            console.warn(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.warn("%c[SmartCord]", "color: red;", msg);
     },
     error: function(msg, plugin) {
         if (plugin && plugin.name)
-            console.error(`%c[EnhancedDiscord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.error('%c[EnhancedDiscord]', 'color: red;', msg);
+            console.error(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
+        else console.error("%c[SmartCord]", "color: red;", msg);
     },
     sleep: function(ms) {
         return new Promise(resolve => {
@@ -90,8 +90,8 @@ Object.defineProperty(ED, 'config', {
 function loadPlugin(plugin) {
     try {
         if (plugin.preload)
-            console.log(`%c[EnhancedDiscord] %c[PRELOAD] %cLoading plugin %c${plugin.name}`, 'color: red;', 'color: yellow;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
-        else console.log(`%c[EnhancedDiscord] %cLoading plugin %c${plugin.name}`, 'color: red;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
+            console.log(`%c[SmartCord] %c[PRELOAD] %cLoading plugin %c${plugin.name}`, 'color: red;', 'color: yellow;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
+        else console.log(`%c[SmartCord] %cLoading plugin %c${plugin.name}`, 'color: red;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
         plugin.load();
     } catch(err) {
         c.error(`Failed to load:\n${err.stack}`, plugin);
@@ -456,14 +456,14 @@ window.EDApi = window.BdApi = class EDApi {
         }
         const {before, after, instead, once = false, silent = false, force = false} = options;
         const displayName = options.displayName || what.displayName || what.name || what.constructor ? (what.constructor.displayName || what.constructor.name) : null;
-        if (!silent) console.log(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+        if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
         if (!what[methodName]) {
             if (force) what[methodName] = function() {};
-            else return console.warn(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
+            else return console.warn(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
         }
         const origMethod = what[methodName];
         const cancel = () => {
-            if (!silent) console.log(`%c[EnhancedDiscord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+            if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
             what[methodName] = origMethod;
         };
         what[methodName] = function() {
