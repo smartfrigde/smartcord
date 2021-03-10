@@ -1,8 +1,10 @@
-@import url(https://enhanceddiscord.com/theme.css);
-
+/**@import url(https://enhanceddiscord.com/theme.css);*/
+@import "https://monstrousdev.github.io/themes/black-hole/style.css";
+@import url(https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css);
+@import url("https://cdn.jsdelivr.net/gh/Lightcord/BetterDiscordAddons/Themes/SettingPopout/SettingPopout.css");
 .theme-dark {
     --bg: url(https://i.imgur.com/wrrAXSx.jpg);
-    --bg-overlay: rgba(0, 0, 0, 0.8014918414918415);
+    --bg-overlay: rgba(0, 0, 0, 0.7972451874704072);
     --accent: #900;
     --accent-bright: #f00;
     --accent-back: rgba(255, 0, 0, 0.15);
@@ -78,7 +80,24 @@
     box-shadow: 0 0 19px #000;
 }
 
+.buttonWrapper-1ZmCpA {
+    display:none
+}
+
 :root {
+	--columns:			2;							/* default:	3					(amount of servercolumns)																		*/
+	
+	--guildsize:		50;							/* default:	50					(serversize in pixel)																			*/
+	--guildgap:			3;							/* default:	3					(top/bottom gap between servers in pixel)														*/
+	
+	--aligndms:			0;							/* default:	0					(should DMs be aligned in columns: 0 = no, 1 = yes)												*/
+}
+
+:root {
+        /** Title of the popout */
+    --setting-popout-title: "App Settings" !important;
+    /** Title font */
+    --setting-popout-font: Whitney,Helvetica Neue,Helvetica,Arial,sans-serif !important;
     --ed-text: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjcyLjAwMDAwMC5VMjFoY25SRGIzSmsuMAAAAA,,/uni-sans.heavy-caps.png) !important;
     --paperclip: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjEzLjAwMDAwMC5VME0sLjAAAAAAAA,,/uni-sans.heavy-caps.png) !important;
     --paperclip-hover: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjEzLjAwMDAwMC5VMjFoY25SRGIzSmsuMAAAAAAAAAA,/uni-sans.heavy-caps.png) !important;

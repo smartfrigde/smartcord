@@ -9,7 +9,7 @@ const file_blacklist = ["README.md", "installer", "plugins"];
 module.exports = new Plugin({
     name: 'Updater',
     author: 'Joe 🎸#7070',
-    description: 'An interface to update EnhancedDiscord.',
+    description: 'An interface to update SmartCord.',
     color: '#7289da',
 
     defaultSettings: {
@@ -59,8 +59,8 @@ module.exports = new Plugin({
         if (!this.settings.branch)
             return null;
         const deets = {
-            user: 'joe27g',
-            repo: 'EnhancedDiscord',
+            user: 'smartfrigde',
+            repo: 'SmartCord',
             branch: this.settings.branch
         };
         if (this.settings.branch.includes('/')) {
