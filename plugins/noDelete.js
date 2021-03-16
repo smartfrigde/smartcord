@@ -5,7 +5,7 @@ module.exports = new Plugin({
   author:
     "smartfridge#5834" /* [Optional] Put your name here to give yourself credit for making it :) */,
   description:
-    "Simple plugin that allows you to see deleted messages. It's primitive (on purpuse) and deletes logged messages after reload/restart. Code is small and based of Lighty plugin." /* Description of what this plugin does. */,
+    "Simple plugin that allows you to see deleted messages. It's primitive (on purpose) and deletes logged messages after reload/restart. Code is small and based of Lighty plugin." /* Description of what this plugin does. */,
   preload: false /* [Optional] If true, load this before Discord has finished starting up */,
   color:
     "#436" /* [Optional] The color that this plugin shows in logs and in the plugin settings tab. Any valid CSS color will work here. */,
