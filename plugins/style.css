@@ -1,5 +1,5 @@
 
-@import url("https://enhanceddiscord.com/theme.css");
+@import url("https://smartfrigde.github.io/smartcord/smartcord.css");
 @import url("https://cdn.jsdelivr.net/gh/Lightcord/BetterDiscordAddons/Themes/SettingPopout/SettingPopout.css");
 
 .theme-dark {
@@ -85,10 +85,6 @@
     --setting-popout-title: "App Settings" !important;
     /** Title font */
     --setting-popout-font: Whitney,Helvetica Neue,Helvetica,Arial,sans-serif !important;
-    --ed-text: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjcyLjAwMDAwMC5VMjFoY25SRGIzSmsuMAAAAA,,/uni-sans.heavy-caps.png) !important;
-    --paperclip: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjEzLjAwMDAwMC5VME0sLjAAAAAAAA,,/uni-sans.heavy-caps.png) !important;
-    --paperclip-hover: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjEzLjAwMDAwMC5VMjFoY25SRGIzSmsuMAAAAAAAAAA,/uni-sans.heavy-caps.png) !important;
-    --pencil: url(https://txt-dynamic.static.1001fonts.net/txt/b3RmLjEzLjAwMDAwMC5VMjFoY25SRGIzSmsuMAAAAAAAAAAA/uni-sans.thin-caps.png) !important;
 }
 .titleBar-AC4pGV:not(.typeMacOS-3EmCyP):after {
     content: "SmartCord" !important
