@@ -38,3 +38,7 @@ Feel free to chat in our [support server](https://discord.gg/F25bc4RYDt). We hav
 ### Contributing
 
 Feel free to make pull requests or make your own plugins repository. If you do make your own plugins, request the 'Plugin Developer' role in the support server so you can announce your releases!
+
+### Credits
+
+Big shotout to EnhancedDiscord developers and plugin makers. This project is just "personalized" fork of EnhancedDiscord that wants to continue it's development in it's own way. I'm not professional coder and I suck lol. Don't expect high tier coding or good coding at all. I used few scripts/snippets shared on EnhancedDiscord server huge thanks to developers of those.
