@@ -50,7 +50,7 @@ const c = {
 };
 
 // config util
-window.ED = { plugins: {}, version: '1.1' };
+window.ED = { plugins: {}, version: '1.2' };
 Object.defineProperty(ED, 'config', {
     get: function() {
         let conf;
