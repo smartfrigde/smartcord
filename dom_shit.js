@@ -1,590 +1,907 @@
-const path = require('path');
-const fs = require('fs');
-const electron = require('electron');
+const Plugin = require("../plugin");
+const BD = require("../bd_shit");
 
-const mainProcessInfo = {
-    originalNodeModulesPath: electron.ipcRenderer.sendSync('main-process-info', 'original-node-modules-path'),
-    originalPreloadScript: electron.ipcRenderer.sendSync('main-process-info', 'original-preload-script')
-};
-const Module =  require('module');
-Module.globalPaths.push(mainProcessInfo.originalNodeModulesPath);
-if (mainProcessInfo.originalPreloadScript) {
-    process.electronBinding('command_line').appendSwitch('preload', mainProcessInfo.originalPreloadScript);
-    // This hack is no longer needed due to context isolation having to be on
-    //electron.contextBridge.exposeInMainWorld = (key, val) => window[key] = val; // Expose DiscordNative
-    require(mainProcessInfo.originalPreloadScript);
-}
+const edSettingsID = require("path").parse(__filename).name;
 
-//electron.ipcRenderer.sendSync('current-web-contents');
+module.exports = new Plugin({
+  name: "SmartCord Settings (React)",
+  author: "jakuski#9191 & smartfridge#5834",
+  description: "Adds an SmartCord tab in user settings.",
+  color: "darkred",
+  async load() {
+    const discordConstants = EDApi.findModule("API_HOST");
+    const UserSettings = module.exports.utils.getComponentFromFluxContainer(
+      EDApi.findModule("getUserSettingsSections").default
+    );
 
-//Get inject directory
-if (!process.env.injDir) process.env.injDir = __dirname;
-
-//set up global functions
-const c = {
-    log: function(msg, plugin) {
-        if (plugin && plugin.name)
-            console.log(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.log("%c[SmartCord]", "color: red;", msg);
-    },
-    info: function(msg, plugin) {
-        if (plugin && plugin.name)
-            console.info(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.info("%c[SmartCord]", "color: red;", msg);
-    },
-    warn: function(msg, plugin) {
-        if (plugin && plugin.name)
-            console.warn(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.warn("%c[SmartCord]", "color: red;", msg);
-    },
-    error: function(msg, plugin) {
-        if (plugin && plugin.name)
-            console.error(`%c[SmartCord] %c[${plugin.name}]`, 'color: red;', `color: ${plugin.color}`, msg);
-        else console.error("%c[SmartCord]", "color: red;", msg);
-    },
-    sleep: function(ms) {
-        return new Promise(resolve => {
-            setTimeout(resolve, ms);
-        });
+    if (!ED.classMaps) {
+      ED.classMaps = {};
     }
-};
 
-// config util
-window.ED = { plugins: {}, version: '1.2' };
-Object.defineProperty(ED, 'config', {
-    get: function() {
-        let conf;
-        try{
-            conf = require('./config.json');
-        } catch (err) {
-            if(err.code !== 'MODULE_NOT_FOUND')
-                c.error(err);
-            conf = {};
+    if (!ED.discordComponents) {
+      ED.discordComponents = {};
+    }
+
+    this._initClassMaps(ED.classMaps);
+    this._initDiscordComponents(ED.discordComponents);
+    this.components = this._initReactComponents();
+    this.settingsSections = this._getDefaultSections(); // Easily allow plugins to add in their own sections if need be.
+
+    this.unpatch = EDApi.monkeyPatch(
+      UserSettings.prototype,
+      "generateSections",
+      (data) => {
+        const sections = data.originalMethod.call(data.thisObject);
+        // We use the devIndex as a base so that should Discord add more sections later on, our sections shouldn't move possibly fucking up the UI.
+        const devIndex = this._getDevSectionIndex(sections, discordConstants);
+        let workingIndex = devIndex + 2;
+
+        sections.splice(workingIndex, 0, ...this.settingsSections);
+        workingIndex += this.settingsSections.length;
+
+        const customSections = this._getPluginSections();
+        if (customSections.length) {
+          sections.splice(workingIndex, 0, ...customSections);
+          workingIndex += customSections.length;
         }
-        return conf;
+
+        sections.splice(workingIndex, 0, { section: "DIVIDER" });
+
+        return sections;
+      }
+    );
+  },
+  unload() {
+    if (this.unpatch && typeof this.unpatch === "function") this.unpatch();
+  },
+  utils: {
+    join(...args) {
+      return args.join(" ");
     },
-    set: function(newSets = {}) {
-        let confPath;
-        let bDelCache;
-        try{
-            confPath = require.resolve('./config.json');
-            bDelCache = true;
-        } catch (err) {
-            if(err.code !== 'MODULE_NOT_FOUND')
-                c.error(err);
-            confPath = path.join(process.env.injDir, 'config.json');
-            bDelCache = false;
-        }
+    getComponentFromFluxContainer(component) {
+      return new component({}).render().type;
+    },
+    shouldPluginRender(id) {
+      let shouldRender = true;
 
-        try {
-            fs.writeFileSync(confPath, JSON.stringify(newSets));
-            if(bDelCache)
-                delete require.cache[confPath];
-        } catch(err) {
-            c.error(err);
-        }
-        return this.config;
+      // BetterDiscord plugins settings render in their own modal activated in their listing.
+      if (
+        ED.plugins[id].getSettingsPanel &&
+        typeof ED.plugins[id].getSettingsPanel == "function"
+      ) {
+        shouldRender = false;
+      }
+
+      if (
+        ED.plugins[id].settings.enabled === false ||
+        !ED.plugins[id].generateSettings
+      ) {
+        shouldRender = false;
+      }
+
+      return shouldRender;
+    },
+  },
+  _getDevSectionIndex(sections, constants) {
+    const indexOf = sections.indexOf(
+      sections.find(
+        (sect) =>
+          sect.section === constants.UserSettingsSections.DEVELOPER_OPTIONS
+      )
+    );
+
+    if (indexOf !== -1) return indexOf;
+    else return 28; // Hardcoded index fallback incase Discord mess with something
+  },
+  _getDefaultSections() {
+    /*
+
+		For future reference:
+
+		normal sections / pages
+			section: [string] an id string of some sort, must be unique.
+			label: [string] self-explanatory
+			element: [optional] [react-renderable] the page that will be rendered on the right when the section is clicked
+			color: [optional] [string (hex)] a colour to be applied to the section (see the log out / discord nitro btn)
+			onClick: [optional] [function] a function to be executed whenever the element is clicked
+
+		special sections
+			headers
+				section: "HEADER"
+				label: [string]
+			divider
+				section: "DIVIDER"
+			custom element
+				section: "CUSTOM"
+				element: [react-renderable]
+
+		all sections regardless of type can have the following
+			predicate: [function => boolean] determine whether the section should be shown
+
+		*/
+    return [
+      {
+        section: "CUSTOM",
+        element: () => {
+          const { join } = module.exports.utils;
+          const { header } = EDApi.findModule("topPill");
+
+          return EDApi.React.createElement(
+            "div",
+            { className: join(header, "ed-settings") },
+            "SmartCord"
+          );
+        },
+      },
+      {
+        section: "SC/Plugins",
+        label: "Plugins",
+        element: this.components.PluginsPage,
+      },
+      {
+        section: "SC/Settings",
+        label: "Settings",
+        element: this.components.SettingsPage,
+      },
+    ];
+  },
+  _getPluginSections() {
+    const arr = [];
+    for (const key in ED.plugins) {
+      if (typeof ED.plugins[key].generateSettingsSection !== "function")
+        continue;
+
+      const label = ED.plugins[key].settingsSectionName || ED.plugins[key].name;
+      arr.push({
+        section: "ED/" + key,
+        label,
+        element: () =>
+          EDApi.React.createElement(this.components.PluginSection, {
+            id: key,
+            label,
+          }),
+      });
     }
-});
+    return arr;
+  },
+  _initClassMaps(obj) {
+    const divM = EDApi.findModule(
+      (m) => m.divider && Object.keys(m).length === 1
+    );
+    obj.headers = EDApi.findModule("defaultMarginh2");
+    obj.margins = EDApi.findModule("marginBottom8");
+    obj.divider = divM ? divM.divider : "";
+    obj.checkbox = EDApi.findModule("checkboxEnabled");
+    obj.buttons = EDApi.findModule("lookFilled");
+    obj.switch = EDApi.findModule("switch");
+    obj.alignment = EDApi.findModule("horizontalReverse");
+    obj.description = EDApi.findModule("formText");
+    // New
+    obj.shadows = EDApi.findModule("elevationHigh");
+  },
+  _initDiscordComponents(obj) {
+    obj.Textbox = EDApi.findModuleByDisplayName("TextInput");
+    obj.Select = EDApi.findModuleByDisplayName("SelectTempWrapper");
+    obj.RadioGroup = EDApi.findModuleByDisplayName("RadioGroup");
+    obj.Title = EDApi.findModuleByDisplayName("FormTitle");
+    obj.Text = EDApi.findModuleByDisplayName("FormText");
+    obj.FormSection = EDApi.findModuleByDisplayName("FormSection");
+    obj.Icon = EDApi.findModuleByDisplayName("Icon");
+    obj.LoadingSpinner = EDApi.findModuleByDisplayName("Spinner");
+    obj.Card = EDApi.findModuleByDisplayName("FormNotice");
+    obj.Flex = EDApi.findModuleByDisplayName("Flex");
+    obj.Switch = EDApi.findModuleByDisplayName("Switch");
+    obj.SwitchItem = EDApi.findModuleByDisplayName("SwitchItem");
+    obj.Slider = EDApi.findModuleByDisplayName("Slider");
+    obj.Select = EDApi.findModuleByDisplayName("SelectTempWrapper");
+    obj.Tooltip = EDApi.findModuleByDisplayName("Tooltip");
+    obj.Button = EDApi.findModule("Sizes");
+    //obj.ColorPicker = EDApi.findModuleByDisplayName("ColorPicker");
 
-function loadPlugin(plugin) {
-    try {
-        if (plugin.preload)
-            console.log(`%c[SmartCord] %c[PRELOAD] %cLoading plugin %c${plugin.name}`, 'color: red;', 'color: yellow;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
-        else console.log(`%c[SmartCord] %cLoading plugin %c${plugin.name}`, 'color: red;', '', `color: ${plugin.color}`, `by ${plugin.author}...`);
-        plugin.load();
-    } catch(err) {
-        c.error(`Failed to load:\n${err.stack}`, plugin);
-    }
-}
-
-ED.localStorage = window.localStorage;
-
-process.once('loaded', async () => {
-    c.log(`v${ED.version} is running. Validating plugins...`);
-
-    const pluginFiles = fs.readdirSync(path.join(process.env.injDir, 'plugins'));
-    const plugins = {};
-    for (const i in pluginFiles) {
-        if (!pluginFiles[i].endsWith('.js') || pluginFiles[i].endsWith('.plugin.js')) continue;
-        let p;
-        const pName = pluginFiles[i].replace(/\.js$/, '');
-        try {
-            p = require(path.join(process.env.injDir, 'plugins', pName));
-            if (typeof p.name !== 'string' || typeof p.load !== 'function') {
-                throw new Error('Plugin must have a name and load() function.');
-            }
-            plugins[pName] = Object.assign(p, {id: pName});
-        }
-        catch (err) {
-            c.warn(`Failed to load ${pluginFiles[i]}: ${err}\n${err.stack}`, p);
-        }
-    }
-    for (const id in plugins) {
-        if (!plugins[id] || !plugins[id].name || typeof plugins[id].load !== 'function') {
-            c.info(`Skipping invalid plugin: ${id}`); delete plugins[id]; continue;
-        }
-        plugins[id].settings; // this will set default settings in config if necessary
-    }
-    ED.plugins = plugins;
-    c.log(`Plugins validated.`);
-
-    // work-around to wait for webpack
-    while (true) {
-        await c.sleep(100);
-        if(electron.webFrame.top.context.window && electron.webFrame.top.context.window.webpackJsonp) break;
+    /*
+		Props: any valid props you can apply to a div element
+		*/
+    obj.Divider = (props) => {
+      props.className = props.className
+        ? props.className + " " + ED.classMaps.divider
+        : ED.classMaps.divider;
+      return EDApi.React.createElement("div", Object.assign({}, props));
     };
-    
-    ED.webSocket = window._ws;
+  },
+  _initReactComponents() {
+    const {
+      createElement: e,
+      Component,
+      Fragment,
+      useState,
+      useEffect,
+      useReducer,
+      createRef,
+      isValidElement,
+    } = EDApi.React;
+    const {
+      FormSection,
+      Divider,
+      Flex,
+      Switch,
+      Title,
+      Text,
+      Button,
+      SwitchItem,
+      Textbox,
+      RadioGroup,
+      Select,
+      Slider /*, ColorPicker*/,
+    } = ED.discordComponents;
+    const { margins } = ED.classMaps;
+    const { join } = module.exports.utils;
 
-    /* Add helper functions that make plugins easy to create */
-	window.req = electron.webFrame.top.context.window.webpackJsonp.push([[], {
-        '__extra_id__': (module, exports, req) => module.exports = req
-	}, [['__extra_id__']]]);
-	delete window.req.m['__extra_id__'];
-	delete window.req.c['__extra_id__'];
-
-    window.findModule = EDApi.findModule;
-    window.findModules = EDApi.findAllModules;
-    window.findRawModule = EDApi.findRawModule;
-    window.monkeyPatch = EDApi.monkeyPatch;
-
-    while (!EDApi.findModule('dispatch'))
-        await c.sleep(100);
-
-    c.log(`Loading preload plugins...`);
-    for (const id in plugins) {
-        if (ED.config[id] && ED.config[id].enabled == false) continue;
-        if (!plugins[id].preload) continue;
-        loadPlugin(plugins[id]);
-    }
-
-    const d = {resolve: () => {}};
-    window.monkeyPatch(window.findModule('dispatch'), 'dispatch', {before: b => {
-        // modules seem to all be loaded when RPC server loads
-        if (b.methodArguments[0].type === 'RPC_SERVER_READY') {
-            window.findModule('dispatch').dispatch.unpatch();
-            d.resolve();
-        }
-    }});
-
-    await new Promise(resolve => {
-        d.resolve = resolve;
-    });
-    c.log(`Modules done loading (${Object.keys(window.req.c).length})`);
-
-    if (ED.config.bdPlugins) {
-        try {
-            await require('./bd_shit').setup();
-            c.log(`Preparing BD plugins...`);
-            for (const i in pluginFiles) {
-                if (!pluginFiles[i].endsWith('.js') || !pluginFiles[i].endsWith('.plugin.js')) continue;
-                let p;
-                const pName = pluginFiles[i].replace(/\.js$/, '');
-                try {
-                    p = require(path.join(process.env.injDir, 'plugins', pName));
-                    if (typeof p.name !== 'string' || typeof p.load !== 'function') {
-                        throw new Error('Plugin must have a name and load() function.');
-                    }
-                    plugins[pName] = Object.assign(p, {id: pName});
-                }
-                catch (err) {
-                    c.warn(`Failed to load ${pluginFiles[i]}: ${err}\n${err.stack}`, p);
-                }
-            }
-            for (const id in plugins) {
-                if (!plugins[id] || !plugins[id].name || typeof plugins[id].load !== 'function') {
-                    c.info(`Skipping invalid plugin: ${id}`); delete plugins[id]; continue;
-                }
-            }
-        }
-        catch (err) {
-            c.warn(`Failed to load BD plugins support: ${err}\n${err.stack}`);
-        }
-    }
-
-    c.log(`Loading plugins...`);
-    for (const id in plugins) {
-        if (ED.config[id] && ED.config[id].enabled == false) continue;
-        if (plugins[id].preload) continue;
-        if (ED.config[id] && ED.config[id].enabled !== true && plugins[id].disabledByDefault) {
-            plugins[id].settings.enabled = false; continue;
-        }
-        loadPlugin(plugins[id]);
-    }
-
-
-    const ht = EDApi.findModule('hideToken');
-    // prevent client from removing token from localstorage when dev tools is opened, or reverting your token if you change it
-    EDApi.monkeyPatch(ht, 'hideToken', () => {});
-    window.fixedShowToken = () => {
-        // Only allow this to add a token, not replace it. This allows for changing of the token in dev tools.
-        if (!ED.localStorage || ED.localStorage.getItem('token')) return;
-        return ED.localStorage.setItem('token', '"' + ht.getToken() + '"');
+    const PluginsPage = () => {
+      return e(
+        FormSection,
+        { title: "SmartCord Plugins", tag: "h2" },
+        e(Flex, {}, e(OpenPluginDirBtn)),
+        e(Divider, {
+          className: join(margins.marginTop20, margins.marginBottom20),
+        }),
+        Object.keys(ED.plugins).map((id) =>
+          e(PluginListing, { id, plugin: ED.plugins[id] })
+        )
+      );
     };
-    EDApi.monkeyPatch(ht, 'showToken', window.fixedShowToken);
-    if (!ED.localStorage.getItem('token') && ht.getToken())
-        window.fixedShowToken(); // prevent you from being logged out for no reason
 
-    // change the console warning to be more fun
-    electron.ipcRenderer.invoke('custom-devtools-warning');
-    
-    // expose stuff for devtools
-    Object.assign(electron.webFrame.top.context.window, {ED, EDApi, BdApi});
-});
+    const SettingsPage = () => {
+      return e(
+        Fragment,
+        null,
+        e(
+          FormSection,
+          { title: "SmartCord Settings", tag: "h2" },
+          e(BDPluginToggle),
+          Object.keys(ED.plugins)
+            .filter(module.exports.utils.shouldPluginRender)
+            .map((id, index) => e(PluginSettings, { id, index }))
+        )
+      );
+    };
 
+    class PluginListing extends Component {
+      constructor(props) {
+        super(props);
 
+        this.state = {
+          reloadBtnText: "Reload",
+        };
 
-/* BD/ED joint api */
-window.EDApi = window.BdApi = class EDApi {
-    static get React() { return this.findModuleByProps('createElement'); }
-    static get ReactDOM() { return this.findModuleByProps('findDOMNode'); }
-
-    static escapeID(id) {
-        return id.replace(/^[^a-z]+|[^\w-]+/gi, '');
-    }
-
-    static injectCSS(id, css) {
-        const style = document.createElement('style');
-		style.id = this.escapeID(id);
-		style.innerHTML = css;
-		document.head.append(style);
-    }
-
-    static clearCSS(id) {
-		const element = document.getElementById(this.escapeID(id));
-		if (element) element.remove();
-    }
-
-    static linkJS(id, url) {
-        return new Promise(resolve => {
-			const script = document.createElement('script');
-			script.id = this.escapeID(id);
-			script.src = url;
-			script.type = 'text/javascript';
-			script.onload = resolve;
-			document.head.append(script);
-		});
-    }
-
-    static unlinkJS(id) {
-        const element = document.getElementById(this.escapeID(id));
-		if (element) element.remove();
-    }
-
-    static getPlugin(name) {
-        const plugin = Object.values(ED.plugins).find(p => p.name == name);
-        if (!plugin) return null;
-        return plugin.bdplugin ? plugin.bdplugin : plugin;
-    }
-
-    static alert(title, body) {
-        return this.showConfirmationModal(title, body, {cancelText: null});
-    }
-
-    /**
-     * Shows a generic but very customizable confirmation modal with optional confirm and cancel callbacks.
-     * @param {string} title - title of the modal
-     * @param {(string|ReactElement|Array<string|ReactElement>)} children - a single or mixed array of react elements and strings. Every string is wrapped in Discord's `Markdown` component so strings will show and render properly.
-     * @param {object} [options] - options to modify the modal
-     * @param {boolean} [options.danger=false] - whether the main button should be red or not
-     * @param {string} [options.confirmText=Okay] - text for the confirmation/submit button
-     * @param {string} [options.cancelText=Cancel] - text for the cancel button
-     * @param {callable} [options.onConfirm=NOOP] - callback to occur when clicking the submit button
-     * @param {callable} [options.onCancel=NOOP] - callback to occur when clicking the cancel button
-     * @param {string} [options.key] - key used to identify the modal. If not provided, one is generated and returned
-     * @returns {string} - the key used for this modal
-     */
-    static showConfirmationModal(title, content, options = {}) {
-        const ModalActions = this.findModuleByProps('openModal', 'updateModal');
-        const Markdown = this.findModuleByDisplayName('Markdown');
-        const ConfirmationModal = this.findModuleByDisplayName('ConfirmModal');
-        if (!ModalActions || !ConfirmationModal || !Markdown) return window.alert(content);
-
-        const emptyFunction = () => {};
-        const {onConfirm = emptyFunction, onCancel = emptyFunction, confirmText = 'Okay', cancelText = 'Cancel', danger = false, key = undefined} = options;
-
-        if (!Array.isArray(content)) content = [content];
-        content = content.map(c => typeof(c) === 'string' ? this.React.createElement(Markdown, null, c) : c);
-        return ModalActions.openModal(props => {
-            return this.React.createElement(ConfirmationModal, Object.assign({
-                header: title,
-                red: danger,
-                confirmText: confirmText,
-                cancelText: cancelText,
-                onConfirm: onConfirm,
-                onCancel: onCancel
-            }, props), content);
-        }, {modalKey: key});
-    }
-
-    static loadPluginSettings(pluginName) {
-        const pl = ED.plugins[pluginName];
-        if (!pl) return null;
-
-        if (!ED.config[pluginName]) {
-            this.savePluginSettings(pluginName, pl.defaultSettings || {enabled: !pl.disabledByDefault});
+        this.canBeManagedByUser = this.canBeManagedByUser.bind(this);
+        this.isPluginEnabled = this.isPluginEnabled.bind(this);
+        this.handleReload = this.handleReload.bind(this);
+        this.handleToggle = this.handleToggle.bind(this);
+        this.handleLoad = this.handleLoad.bind(this);
+        this.handleUnload = this.handleUnload.bind(this);
+      }
+      isPluginEnabled() {
+        return this.props.plugin.settings.enabled !== false;
+      }
+      canBeManagedByUser() {
+        return !(this.props.id === edSettingsID);
+      }
+      handleReload() {
+        this.setState({ reloadBtnText: "Reloading..." });
+        try {
+          this.props.plugin.reload();
+          this.setState({ reloadBtnText: "Reloaded!" });
+        } catch (err) {
+          module.exports.error(err);
+          this.setState({
+            reloadBtnText: `Failed to reload (${err.name} - see console.)`,
+          });
         }
-        return ED.config[pluginName];
+
+        setTimeout(
+          (setState) => setState({ reloadBtnText: "Reload" }),
+          3000,
+          this.setState.bind(this)
+        );
+      }
+      handleToggle(newStatus) {
+        if (newStatus) this.handleLoad();
+        else this.handleUnload();
+
+        this.forceUpdate();
+      }
+      handleLoad() {
+        if (this.isPluginEnabled()) return;
+
+        this.props.plugin.settings.enabled = true;
+        ED.plugins[this.props.id].settings = this.props.plugin.settings;
+        this.props.plugin.load();
+      }
+      handleUnload() {
+        if (!this.isPluginEnabled()) return;
+
+        this.props.plugin.settings.enabled = false;
+        ED.plugins[this.props.id].settings = this.props.plugin.settings;
+        this.props.plugin.unload();
+      }
+      render() {
+        const { plugin } = this.props;
+        const { MarginRight, ColorBlob } = this.constructor;
+
+        return e(
+          Fragment,
+          null,
+          e(
+            Flex,
+            { direction: Flex.Direction.VERTICAL },
+            e(
+              Flex,
+              { align: Flex.Align.CENTER },
+              e(Title, { tag: "h3", className: "" }, plugin.name),
+              e(ColorBlob, { color: plugin.color || "orange" }),
+              e(
+                MarginRight,
+                null,
+                e(
+                  Button,
+                  { size: Button.Sizes.NONE, onClick: this.handleReload },
+                  this.state.reloadBtnText
+                )
+              ),
+              this.canBeManagedByUser() &&
+                e(Switch, {
+                  checked: this.isPluginEnabled(),
+                  onChange: this.handleToggle,
+                })
+            ),
+            e(
+              Text,
+              { type: Text.Types.DESCRIPTION },
+              VariableTypeRenderer.render(plugin.description)
+            )
+          ),
+          e(Divider, {
+            className: join(margins.marginTop20, margins.marginBottom20),
+          })
+        );
+      }
     }
 
-    static savePluginSettings(pluginName, data) {
-        const pl = ED.plugins[pluginName];
-        if (!pl) return null;
-        ED.config[pluginName] = data;
-        ED.config = ED.config; // eslint-disable-line no-self-assign
-    }
+    PluginListing.MarginRight = (props) =>
+      e("div", { style: { marginRight: "10px" } }, props.children);
+    PluginListing.ColorBlob = (props) =>
+      e("div", {
+        style: {
+          backgroundColor: props.color,
+          boxShadow: `0 0 5px 2px ${props.color}`,
+          borderRadius: "50%",
+          height: "10px",
+          width: "10px",
+          marginRight: "8px",
+        },
+      });
 
-    static loadData(pluginName, key) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
-        if (!pl) return null;
-        const id = pl.id;
-    
-        if (!ED.plugins[id]) return null;
-        return this.loadPluginSettings(id)[key];
-    }
+    const PluginSettings = (props) => {
+      const plugin = ED.plugins[props.id];
 
-    static saveData(pluginName, key, data) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
-        if (!pl) return null;
-        const id = pl.id;
-    
-        const obj = this.loadPluginSettings(id);
-        obj[key] = data;
-        return this.savePluginSettings(id, obj);
-    }
+      return e(
+        Fragment,
+        null,
+        e(Divider, {
+          style: { marginTop: props.index === 0 ? "0px" : undefined },
+          className: join(margins.marginTop8, margins.marginBottom20),
+        }),
+        e(Title, { tag: "h2" }, plugin.name),
+        VariableTypeRenderer.render(
+          plugin.generateSettings(),
+          plugin.settingsListeners,
+          props.id
+        )
+      );
+    };
 
-    static getData(pluginName, key) {
-        return this.loadData(pluginName, key);
-    }
+    const PluginSection = (props) => {
+      const plugin = ED.plugins[props.id];
 
-    static setData(pluginName, key, data) {
-        this.saveData(pluginName, key, data);
-    }
+      return e(
+        Fragment,
+        null,
+        e(Title, { tag: "h2" }, props.label),
+        VariableTypeRenderer.render(
+          plugin.generateSettingsSection(),
+          plugin.settingsListeners,
+          props.id
+        )
+      );
+    };
 
-    static getInternalInstance(node) {
-        if (!(node instanceof window.jQuery) && !(node instanceof Element)) return undefined;
-        if (node instanceof window.jQuery) node = node[0];
-        return node[Object.keys(node).find(k => k.startsWith('__reactInternalInstance'))];
-    }
+    const BDPluginToggle = () => {
+      const [enabled, setEnabled] = useState(ED.config.bdPlugins);
 
-    static showToast(content, options = {}) {	
-        if (!document.querySelector('.toasts')) {
-            const container = document.querySelector('.sidebar-2K8pFh + div') || null;
-            const memberlist = container ? container.querySelector('.membersWrap-2h-GB4') : null;
-            const form = container ? container.querySelector('form') : null;
-            const left = container ? container.getBoundingClientRect().left : 310;
-            const right = memberlist ? memberlist.getBoundingClientRect().left : 0;
-            const width = right ? right - container.getBoundingClientRect().left : Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - left - 240;
-            const bottom = form ? form.offsetHeight : 80;
-            const toastWrapper = document.createElement('div');
-            toastWrapper.classList.add('toasts');
-            toastWrapper.style.setProperty('left', left + 'px');
-            toastWrapper.style.setProperty('width', width + 'px');
-            toastWrapper.style.setProperty('bottom', bottom + 'px');
-            document.querySelector('#app-mount').appendChild(toastWrapper);
-        }
-        const {type = '', icon = true, timeout = 3000} = options;
-        const toastElem = document.createElement('div');
-        toastElem.classList.add('toast');
-        if (type) toastElem.classList.add('toast-' + type);
-        if (type && icon) toastElem.classList.add('icon');
-        toastElem.innerText = content;
-        document.querySelector('.toasts').appendChild(toastElem);
-        setTimeout(() => {
-            toastElem.classList.add('closing');
+      useEffect(() => {
+        if (enabled === ED.config.bdPlugins) return; // Prevent unneccesary file write
+
+        ED.config.bdPlugins = enabled;
+        ED.config = ED.config;
+      });
+
+      return e(
+        SwitchItem,
+        {
+          onChange: () => setEnabled(!enabled),
+          value: enabled,
+          hideBorder: true,
+          note:
+            "Allows SmartCord to load BetterDiscord plugins natively. Reload (CTRL+R) for changes to take effect. Highly Experimental not recommended on daily use.",
+        },
+        "BetterDiscord Plugins (Experimental)"
+      );
+    };
+
+    const OpenPluginDirBtn = () => {
+      const [string, setString] = useState("Open Plugins Directory");
+
+      return e(
+        Button,
+        {
+          size: Button.Sizes.SMALL,
+          color: Button.Colors.GREEN,
+          style: { margin: "0 5px", display: "inline-block" },
+          onClick: (e) => {
+            setString("Opening...");
+            const sucess = require("electron").shell.openPath(
+              e.shiftKey
+                ? process.env.injDir
+                : require("path").join(process.env.injDir, "plugins")
+            );
+
+            if (sucess) setString("Opened!");
+            else setString("Failed to open...");
+
             setTimeout(() => {
-                toastElem.remove();
-                if (!document.querySelectorAll('.toasts .toast').length) document.querySelector('.toasts').remove();
-            }, 300);
-        }, timeout);
-    }
+              setString("Open Plugins Directory");
+            }, 1500);
+          },
+        },
+        string
+      );
+    };
 
-    static findModule(filter, silent = true) {
-        const moduleName = typeof filter === 'string' ? filter : null;
-        for (const i in window.req.c) {
-            if (window.req.c.hasOwnProperty(i)) {
-                const m = window.req.c[i].exports;
-                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default))) return m.default;
-                if (m && (moduleName ? m[moduleName] : filter(m)))	return m;
-            }
+    class VariableTypeRenderer {
+      static render(value, listeners, plugin) {
+        const { DOMStringRenderer, HTMLElementInstanceRenderer } = this;
+
+        let typeOf = null;
+
+        if (typeof value === "string") typeOf = "domstring";
+        if (isValidElement(value)) typeOf = "react";
+        if (value instanceof HTMLElement) typeOf = "htmlelement-instance";
+        if (Array.isArray(value)) typeOf = "auto";
+        if (value == null) typeOf = "blank";
+
+        if (typeOf === null)
+          return module.exports.error(
+            "Unable to figure out how to render value ",
+            value
+          );
+
+        switch (typeOf) {
+          case "domstring":
+            return e(DOMStringRenderer, { html: value, listeners });
+          case "react":
+            return value;
+          case "htmlelement-instance":
+            return e(HTMLElementInstanceRenderer, { instance: value });
+          case "auto":
+            return DiscordUIGenerator.render(value, plugin);
+          case "blank":
+            return e(Fragment);
         }
-        if (!silent) c.warn(`Could not find module ${module}.`, {name: 'Modules', color: 'black'});
-        return null;
+      }
     }
+    VariableTypeRenderer.DOMStringRenderer = class DOMString extends Component {
+      componentDidMount() {
+        if (!this.props.listeners) return;
 
-    static findRawModule(filter, silent = true) {
-        const moduleName = typeof filter === 'string' ? filter : null;
-        for (const i in window.req.c) {
-            if (window.req.c.hasOwnProperty(i)) {
-                const m = window.req.c[i].exports;
-                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default)))
-                    return window.req.c[i];
-                if (m && (moduleName ? m[moduleName] : filter(m)))
-                    return window.req.c[i];
-            }
-        }
-        if (!silent) c.warn(`Could not find module ${module}.`, {name: 'Modules', color: 'black'});
-        return null;
-    }
+        this.props.listeners.forEach((listener) => {
+          document
+            .querySelector(listener.el)
+            .addEventListener(listener.type, listener.eHandler);
+        });
+      }
+      render() {
+        return e("div", {
+          dangerouslySetInnerHTML: { __html: this.props.html },
+        });
+      }
+    };
+    VariableTypeRenderer.HTMLElementInstanceRenderer = class HTMLElementInstance extends (
+      Component
+    ) {
+      constructor() {
+        super();
+        this.ref = createRef();
+      }
+      componentDidMount() {
+        this.ref.current.appendChild(this.props.instance);
+      }
+      render() {
+        return e("div", { ref: this.ref });
+      }
+    };
 
-    static findAllModules(filter) {
-        const moduleName = typeof filter === 'string' ? filter : null;
-        const modules = [];
-        for (const i in window.req.c) {
-            if (window.req.c.hasOwnProperty(i)) {
-                const m = window.req.c[i].exports;
-                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default))) modules.push(m.default);
-                else if (m && (moduleName ? m[moduleName] : filter(m))) modules.push(m);
-            }
-        }
-        return modules;
-    }
+    const DiscordUIGenerator = {
+      reactMarkdownRules: (() => {
+        const simpleMarkdown = EDApi.findModule("markdownToReact");
+        const rules = require("electron").webFrame.top.context.window._.clone(
+          simpleMarkdown.defaultRules
+        );
 
-    static findModuleByProps(...props) {
-        return this.findModule(module => props.every(prop => module[prop] !== undefined));
-    }
-
-    static findModuleByDisplayName(name) {
-        return this.findModule(module => module.displayName === name);
-    }
-
-    static monkeyPatch(what, methodName, options) {
-        if (typeof options === 'function') {
-            const newOptions = {instead: options, silent: true};
-            options = newOptions;
-        }
-        const {before, after, instead, once = false, silent = false, force = false} = options;
-        const displayName = options.displayName || what.displayName || what.name || what.constructor ? (what.constructor.displayName || what.constructor.name) : null;
-        if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
-        if (!what[methodName]) {
-            if (force) what[methodName] = function() {};
-            else return console.warn(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
-        }
-        const origMethod = what[methodName];
-        const cancel = () => {
-            if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
-            what[methodName] = origMethod;
+        rules.paragraph.react = (node, output, state) => {
+          return e(Fragment, null, output(node.content, state));
         };
-        what[methodName] = function() {
-            const data = {
-                thisObject: this,
-                methodArguments: arguments,
-                cancelPatch: cancel,
-                originalMethod: origMethod,
-                callOriginalMethod: () => data.returnValue = data.originalMethod.apply(data.thisObject, data.methodArguments)
-            };
-            if (instead) {
-                const tempRet = EDApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
-                if (tempRet !== undefined) data.returnValue = tempRet;
-            }
-            else {
-                if (before) EDApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
-                data.callOriginalMethod();
-                if (after) EDApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
-            }
-            if (once) cancel();
-            return data.returnValue;
+
+        rules.em.react = (node, output, state) => {
+          return e("i", null, output(node.content, state));
         };
-        what[methodName].__monkeyPatched = true;
-        what[methodName].displayName = 'patched ' + (what[methodName].displayName || methodName);
-        what[methodName].unpatch = cancel;
-        return cancel;
-    }
 
-    static testJSON(data) {
-        try {
-            return JSON.parse(data);
-        }
-        catch (err) {
-            return false;
-        }
-    }
-
-    static suppressErrors(method, description) {
-        return (...params) => {
-            try { return method(...params);	}
-            catch (e) { console.error('Error occurred in ' + description, e); }
+        rules.link.react = (node, output, state) => {
+          return e(
+            "a",
+            {
+              href: node.target,
+              target: "_blank",
+              rel: "noreferrer noopener",
+            },
+            output(node.content, state)
+          );
         };
-    }
 
-    static formatString(string, values) {
-        for (const val in values) {
-            string = string.replace(new RegExp(`\\{\\{${val}\\}\\}`, 'g'), values[val]);
+        return rules;
+      })(),
+      render(ui, pluginID) {
+        const { _types } = DiscordUIGenerator;
+
+        return e(
+          "div",
+          {},
+          ui.map((element) => {
+            if (isValidElement(element)) return element;
+
+            const component = _types[element.type];
+            if (!component)
+              return module.exports.error(
+                "[DiscordUIGenerator] Invalid element type:",
+                element.type
+              );
+
+            return e(component, Object.assign({}, element, { pluginID }));
+          })
+        );
+      },
+      _parseMD(content) {
+        const { reactMarkdownRules } = DiscordUIGenerator;
+        const { markdownToReact } = EDApi.findModule("markdownToReact");
+
+        return markdownToReact(content, reactMarkdownRules);
+      },
+      _loadData(props) {
+        const plug = ED.plugins[props.pluginID];
+        if (!plug) return;
+        if (plug.customLoad) {
+          // custom function for loading settings
+          return plug.customLoad(props.configName);
         }
-        return string;
-    }
+        return EDApi.loadData(props.pluginID, props.configName);
+      },
+      _saveData(props, data) {
+        const plug = ED.plugins[props.pluginID];
+        if (!plug) return;
+        if (plug.customSave) {
+          // custom function for saving settings
+          return plug.customSave(props.configName, data);
+        }
+        const r = EDApi.saveData(props.pluginID, props.configName, data);
+        if (plug.onSettingsUpdate) {
+          // custom function to run after settings have updated
+          plug.onSettingsUpdate(props.configName, data);
+        }
+        return r;
+      },
+      _cfgNameCheck(props, name) {
+        if (!props.configName || typeof props.configName !== "string") {
+          module.exports.error(
+            `[DiscordUIGenerator] Input component (${name}) was not passed a configName value!`
+          );
+          throw new Error("Stopping react render. Please fix above error");
+        }
+      },
+      _inputWrapper(props) {
+        const { _parseMD } = DiscordUIGenerator;
 
-    static isPluginEnabled(name) {
-        const plugins = Object.values(ED.plugins);
-        const plugin = plugins.find(p => p.id == name || p.name == name);
-        if (!plugin) return false;
-        return !(plugin.settings.enabled === false);
-    }
+        return e(
+          Fragment,
+          null,
+          props.title && e(Title, { tag: "h5" }, props.title),
+          props.children,
+          props.desc &&
+            e(
+              Text,
+              {
+                type: Text.Types.DESCRIPTION,
+                className: join(margins.marginTop8, margins.marginBottom20),
+              },
+              _parseMD(props.desc)
+            )
+        );
+      },
+      _types: {
+        "std:title": (props) => {
+          return e(
+            Title,
+            { id: props.id, tag: props.tag || "h5" },
+            props.content
+          );
+        },
+        "std:description": (props) => {
+          const { _parseMD } = DiscordUIGenerator;
 
-    static isThemeEnabled() {
-        return false;
-    }
+          return e(
+            Text,
+            { id: props.id, type: props.descriptionType || "description" },
+            _parseMD(props.content)
+          );
+        },
+        "std:divider": (props) => {
+          return e(Divider, {
+            id: props.id,
+            style: { marginTop: props.top, marginBottom: props.bottom },
+          });
+        },
+        "std:spacer": (props) => {
+          return e("div", {
+            id: props.id,
+            style: { marginBottom: props.space },
+          });
+        },
+        "input:text": (props) => {
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _inputWrapper,
+          } = DiscordUIGenerator;
 
-    static isSettingEnabled(id) {
-        return ED.config[id];
-    }
-};
+          _cfgNameCheck(props, "input:text");
 
-window.BdApi.Plugins = new class AddonAPI {
+          const [value, setValue] = useState(load(props));
 
-    get folder() {return path.join(process.env.injDir, 'plugins');}
+          return e(
+            _inputWrapper,
+            { title: props.title, desc: props.desc },
+            e(Textbox, {
+              id: props.id,
+              onChange: (val) => setValue(val),
+              onBlur: (e) => save(props, e.currentTarget.value),
+              value,
+              placeholder: props.placeholder,
+              size: props.mini ? "mini" : "default",
+              disabled: props.disabled,
+              type: props.number ? "number" : "text",
+            })
+          );
+        },
+        "input:button": (props) => {
+          const [string, setString] = useState(props.name);
 
-    isEnabled(name) {
-        const plugins = Object.values(ED.plugins);
-        const plugin = plugins.find(p => p.id == name || p.name == name);
-        if (!plugin) return false;
-        return !(plugin.settings.enabled === false);
-    }
+          return e(
+            Button,
+            {
+              id: props.id,
+              size: Button.Sizes[(props.size || "").toUpperCase() || "SMALL"],
+              color:
+                Button.Colors[(props.color || "").toUpperCase() || "BRAND"],
+              look: Button.Looks[(props.look || "").toUpperCase() || "FILLED"],
+              style: { margin: "0 5px", display: "inline-block" },
+              disabled: props.disabled,
+              onClick: () => props.onClick(setString),
+            },
+            string
+          );
+        },
+        "input:colorpicker": (props) => {
+          // TODO: proper transparency support? would need to use different/modified component
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _inputWrapper,
+          } = DiscordUIGenerator;
 
-    enable(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin || plugin.settings.enabled !== false) return;
-        plugin.settings.enabled = true;
-        ED.plugins[name].settings = plugin.settings;
-        plugin.load();
-    }
+          _cfgNameCheck(props, "input:text");
 
-    disable(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin || plugin.settings.enabled === false) return;
-        plugin.settings.enabled = false;
-        ED.plugins[name].settings = plugin.settings;
-        plugin.unload();
-    }
+          const [value, setValue] = useState(load(props));
 
-    toggle(name) {
-        if (this.isEnabled(name)) this.disable(name);
-        else this.enable(name);
-    }
+          return e(
+            "div",
+            e(Title, { tag: "h5" }, props.title),
+            /*e(ColorPicker, {
+							onChange: value => {
+								const hexValue = '#'+value.toString(16).padStart(6, '0');
+								const inp = document.getElementById('ed_'+props.configName);
+								if (inp) inp.value = hexValue;
+								save(props, hexValue);
+							},
+							colors: props.colors || [],
+							defaultColor: props.defaultColor,
+							customColor: props.currentColor,
+							value: props.currentColor
+						}),*/
+            e("div", { style: { marginBottom: 10 } }),
+            e(
+              _inputWrapper,
+              { desc: props.desc },
+              e(Textbox, {
+                id: "ed_" + props.configName,
+                onChange: (val) => setValue(val),
+                onBlur: (e) => save(props, e.currentTarget.value),
+                value,
+                placeholder: props.placeholder,
+                size: "mini",
+                disabled: props.disabled,
+              })
+            )
+          );
+        },
+        "input:boolean": (props) => {
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _parseMD,
+          } = DiscordUIGenerator;
 
-    reload(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin) return;
-        plugin.reload();
-    }
+          _cfgNameCheck(props, "input:boolean");
 
-    get(name) {
-        return ED.plugins[name] || null;
-    }
+          const [enabled, toggle] = useReducer((state) => {
+            const newState = !state;
 
-    getAll() {
-        return Object.values(ED.plugins);
-    }
-};
+            save(props, newState);
 
-window.BdApi.Themes = new class AddonAPI {
-    get folder() {return '';}
-    isEnabled() {}
-    enable() {}
-    disable() {}
-    toggle() {}
-    reload() {}
-    get() {return null;}
-    getAll() {return [];}
-};
+            return newState;
+          }, load(props));
+
+          return e(
+            SwitchItem,
+            {
+              id: props.id,
+              onChange: toggle,
+              value: enabled,
+              hideBorder: props.hideBorder,
+              note: _parseMD(props.note),
+              disabled: props.disabled,
+            },
+            props.title
+          );
+        },
+        "input:radio": (props) => {
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _inputWrapper,
+          } = DiscordUIGenerator;
+
+          _cfgNameCheck(props, "input:radio");
+
+          const [currentSetting, setSetting] = useReducer((state, data) => {
+            const newState = data.value;
+
+            save(props, newState);
+
+            return newState;
+          }, load(props));
+
+          return e(
+            _inputWrapper,
+            { title: props.title, desc: props.desc },
+            e(RadioGroup, {
+              id: props.id,
+              onChange: setSetting,
+              value: currentSetting,
+              size: props.size ? props.size : "10px",
+              disabled: props.disabled,
+              options: props.options,
+            })
+          );
+        },
+        "input:select": (props) => {
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _inputWrapper,
+          } = DiscordUIGenerator;
+
+          _cfgNameCheck(props, "input:select");
+
+          const [currentSetting, setSetting] = useReducer((state, data) => {
+            const newState = data.value;
+
+            save(props, newState);
+
+            return newState;
+          }, load(props));
+
+          return e(
+            _inputWrapper,
+            { title: props.title, desc: props.desc },
+            e(Select, {
+              id: props.id,
+              onChange: setSetting,
+              value: currentSetting,
+              disabled: props.disabled,
+              options: props.options,
+              searchable: props.searchable || false,
+            })
+          );
+        },
+        "input:slider": (props) => {
+          const {
+            _loadData: load,
+            _saveData: save,
+            _cfgNameCheck,
+            _inputWrapper,
+          } = DiscordUIGenerator;
+
+          _cfgNameCheck(props, "input:slider");
+
+          const [currentSetting, setSetting] = useReducer((state, data) => {
+            const newState = data;
+
+            save(props, newState);
+
+            return newState;
+          }, load(props) || props.defaultValue);
+
+          const defaultOnValueRender = (e) => {
+            return e.toFixed(0) + "%";
+          };
+
+          return e(
+            _inputWrapper,
+            { title: props.title, desc: props.desc },
+            e(Slider, {
+              id: props.id,
+              onValueChange: setSetting,
+              onValueRender: props.formatTooltip
+                ? props.formatTooltip
+                : defaultOnValueRender,
+              initialValue: currentSetting,
+              defaultValue: props.highlightDefaultValue
+                ? props.defaultValue
+                : null,
+              minValue: props.minValue,
+              maxValue: props.maxValue,
+              disabled: props.disabled,
+              markers: props.markers,
+              stickToMarkers: props.stickToMarkers,
+            })
+          );
+        },
+      },
+    };
+
+    return {
+      PluginsPage,
+      SettingsPage,
+      PluginListing,
+      PluginSettings,
+      PluginSection,
+      BDPluginToggle,
+      OpenPluginDirBtn,
+      __VariableTypeRenderer: VariableTypeRenderer,
+      __DiscordUIGenerator: DiscordUIGenerator,
+    };
+  },
+});
