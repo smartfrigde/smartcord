@@ -4,7 +4,7 @@ const readFile = require('util').promisify(fs.readFile);
 const writeFile = require('util').promisify(fs.writeFile);
 const path = require('path');
 const crypto = require('crypto');
-const file_blacklist = ["README.md", "installer", "plugins"];
+const file_blacklist = ["README.md", "installer"];
 
 module.exports = new Plugin({
     name: 'Updater',
@@ -13,7 +13,7 @@ module.exports = new Plugin({
     color: '#7289da',
 
     defaultSettings: {
-        branch: 'master',
+        branch: 'main',
         auto_check: true,
         auto_update: true,
         notify: true,
@@ -284,8 +284,8 @@ module.exports = new Plugin({
                 type: "input:text",
                 configName: "branch",
                 title: "Branch",
-                desc: "Which branch to fetch from GitHub. The default (stable) branch is **master**. The **beta** branch includes new features, sometimes experimental or incomplete. You can also specify a fork with github_username/repo_name/branch_name.",
-                placeholder: "master, beta, urmom/gay/master etc...",
+                desc: "Which branch to fetch from GitHub. The default (stable) branch is **main**. The **beta** branch includes new features, sometimes experimental or incomplete. You can also specify a fork with github_username/repo_name/branch_name.",
+                placeholder: "main, beta, urmom/gay/main etc...",
                 mini: true
             }
         ]
