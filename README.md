@@ -2,7 +2,6 @@
 Fork of EnhancedDiscord which wants to maintain it!
 
 Support server:
-<a href="https://discord.gg/F25bc4RYDt"><img src="https://discordapp.com/api/guilds/820732039253852171/embed.png" alt="Discord server" /></a>
 (https://discord.gg/F25bc4RYDt)
 
 #### DISCLAIMER!
