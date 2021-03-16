@@ -17,7 +17,7 @@ Currently we have no actual installer. This will change in near future but for n
 
 ### Themes
 
-By default, the official [EnhancedDiscord/SmartCord theme](https://github.com/joe27g/Discord-Theme) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/joe27g/EnhancedDiscord/wiki/FAQ).
+By default, the official [EnhancedDiscord/SmartCord theme](https://smartfrigde.github.io/smartcord/smartcord.css) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/joe27g/EnhancedDiscord/wiki/FAQ).
 
 ### Plugins
 
