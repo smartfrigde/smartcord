@@ -432,9 +432,9 @@ module.exports = new Plugin({
           value: enabled,
           hideBorder: true,
           note:
-            "Allows SmartCord to load BetterDiscord plugins natively. Reload (ctrl+r) for changes to take effect.",
+            "Allows SmartCord to load BetterDiscord plugins natively. Reload (CTRL+R) for changes to take effect. Highly Experimental not recommended on daily use.",
         },
-        "BetterDiscord Plugins"
+        "BetterDiscord Plugins (Experimental)"
       );
     };
 
