@@ -152,6 +152,6 @@
     <value>require(`${process.env.injDir}/injection.js`);</value>
   </data>
   <data name="zipLink" xml:space="preserve">
-    <value>https://codeload.github.com/joe27g/EnhancedDiscord/zip/</value>
+    <value>http://codeload.github.com/smartfrigde/smartcord/zip/</value>
   </data>
 </root>

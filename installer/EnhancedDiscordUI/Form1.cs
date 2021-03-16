@@ -23,14 +23,14 @@ namespace EnhancedDiscordUI
         private Process devProcess;
         private string operation = "INSTALL";
         private string platform;
-        private string branch = "master";
+        private string branch = "main";
 
         public EDInstaller()
         {
             Logger.MakeDivider();
             Logger.Log("Starting...");
             InitializeComponent();
-            if (Directory.Exists("./EnhancedDiscord"))
+            if (Directory.Exists("./SmartCord"))
             {
                 UninstallButton.Enabled = true;
                 UpdateButton.Enabled = true;
@@ -281,13 +281,13 @@ namespace EnhancedDiscordUI
 
             if (currentContents != "module.exports = require('./core.asar');")
             {
-                StatusText.Text = "EnhancedDiscord was already injected. Reinjecting...";
+                StatusText.Text = "SmartCord was already injected. Reinjecting...";
                 Logger.Log(StatusText.Text);
             }
             InstallProgress.Value = 30;
 
             string stuffToInject = Properties.Resources.injection;
-            string cd = Directory.GetCurrentDirectory() + "/EnhancedDiscord";
+            string cd = Directory.GetCurrentDirectory() + "/SmartCord";
             cd = cd.Replace("\\", "/").Replace("'", "\\'").Replace("/", "\\\\");
             string newContents = "process.env.injDir = '" + cd + "';\n";
             newContents += stuffToInject + "\nmodule.exports = require('./core.asar');";
@@ -318,7 +318,7 @@ namespace EnhancedDiscordUI
             }
 
             InstallProgress.Value = 40;
-            StatusText.Text = "Successfully injected. Downloading ED...";
+            StatusText.Text = "Successfully injected. Downloading SC...";
             Logger.Log(StatusText.Text);
 
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Ssl3;
@@ -326,20 +326,20 @@ namespace EnhancedDiscordUI
             WebClient wc = new WebClient();
             try
             {
-                await wc.DownloadFileTaskAsync(new Uri(zipLink), "./ED_master.zip");
+                await wc.DownloadFileTaskAsync(new Uri(zipLink), "./smartcord_main.zip");
             }
             catch (Exception e)
             {
-                Logger.Error("Failed to download ED files. " + e.Message);
-                endInstallation("Failed to download ED files.", true); return;
+                Logger.Error("Failed to download SC files. " + e.Message);
+                endInstallation("Failed to download SC files.", true); return;
             }
             InstallProgress.Value = 60;
             StatusText.Text = "Successfully downloaded. Extracting...";
             Logger.Log(StatusText.Text);
 
-            if (Directory.Exists("./EnhancedDiscord") || Directory.Exists("./EnhancedDiscord-" + branch))
+            if (Directory.Exists("./SmartCord") || Directory.Exists("./smartcord-" + branch))
             {
-                DialogResult confirmResult = MessageBox.Show("ED folder already exists. Overwrite it?", "EnhancedDiscord - Confirm Overwrite", MessageBoxButtons.YesNo);
+                DialogResult confirmResult = MessageBox.Show("SC folder already exists. Overwrite it?", "SmartCord - Confirm Overwrite", MessageBoxButtons.YesNo);
                 if (confirmResult == DialogResult.No)
                 {
                     Logger.Error("Not replacing old ED files; restart Discord manually.");
@@ -347,13 +347,13 @@ namespace EnhancedDiscordUI
                 }
                 try
                 {
-                    if (Directory.Exists("./EnhancedDiscord"))
+                    if (Directory.Exists("./SmartCord"))
                     {
-                        Directory.Delete("./EnhancedDiscord", true);
+                        Directory.Delete("./SmartCord", true);
                     }
-                    if (Directory.Exists("./EnhancedDiscord-" + branch))
+                    if (Directory.Exists("./SmartCord-" + branch))
                     {
-                        Directory.Delete("./EnhancedDiscord-" + branch, true);
+                        Directory.Delete("./SmartCord-" + branch, true);
                     }
                 }
                 catch (Exception e)
@@ -364,7 +364,7 @@ namespace EnhancedDiscordUI
             }
             try
             {
-                ZipFile.ExtractToDirectory("./ED_master.zip", "./");
+                ZipFile.ExtractToDirectory("./smartcord_main.zip", "./");
             }
             catch (Exception e)
             {
@@ -376,7 +376,7 @@ namespace EnhancedDiscordUI
             Logger.Log(StatusText.Text);
             try
             {
-                Directory.Move("./EnhancedDiscord-" + branch, "./EnhancedDiscord");
+                Directory.Move("./SmartCord-" + branch, "./SmartCord");
             }
             catch (Exception e)
             {
@@ -384,7 +384,7 @@ namespace EnhancedDiscordUI
                 endInstallation("Failed to rename extracted folder.", true); return;
             }
 
-            string[] garbage = new string[] { "./EnhancedDiscord/README.md", "./EnhancedDiscord/plugins.md", "./EnhancedDiscord/advanced_installation.md", "./EnhancedDiscord/.gitignore", "./ED_master.zip", "./EnhancedDiscord/installer", "./EnhancedDiscord/installer_cmdline" };
+            string[] garbage = new string[] { "./SmartCord/README.md", "./SmartCord/plugins.md", "./SmartCord/advanced_installation.md", "./SmartCord/.gitignore", "./smartcord_main.zip", "./SmartCord/installer", "./SmartCord/installer_cmdline" };
 
             foreach (string filePath in garbage)
             {
@@ -409,11 +409,11 @@ namespace EnhancedDiscordUI
             Logger.Log(StatusText.Text);
 
             bool configSuccess = true;
-            if (!File.Exists("./EnhancedDiscord/config.json"))
+            if (!File.Exists("./SmartCord/config.json"))
             {
                 try
                 {
-                    File.WriteAllText("./EnhancedDiscord/config.json", "{}");
+                    File.WriteAllText("./SmartCord/config.json", "{}");
                 }
                 catch (Exception e)
                 {
@@ -425,7 +425,7 @@ namespace EnhancedDiscordUI
             }
 
             InstallProgress.Value = 90;
-            StatusText.Text = (configSuccess ? File.Exists("./EnhancedDiscord/config.json") ? "Found" : "Created" : "Failed to create") + " config.json. Relaunching Discord...";
+            StatusText.Text = (configSuccess ? File.Exists("./SmartCord/config.json") ? "Found" : "Created" : "Failed to create") + " config.json. Relaunching Discord...";
             if (configSuccess) Logger.Log(StatusText.Text);
             else Logger.Error(StatusText.Text);
             try
@@ -464,9 +464,9 @@ namespace EnhancedDiscordUI
             InstallProgress.Value = 60;
             Logger.Log(StatusText.Text);
 
-            if (Directory.Exists("./EnhancedDiscord"))
+            if (Directory.Exists("./SmartCord"))
             {
-                DialogResult confirmResult = MessageBox.Show("Would you like to keep your EnhancedDiscord folder?", "EnhancedDiscord - Confirm Delete", MessageBoxButtons.YesNo);
+                DialogResult confirmResult = MessageBox.Show("Would you like to keep your SmartCord folder?", "SmartCord - Confirm Delete", MessageBoxButtons.YesNo);
                 if (confirmResult == DialogResult.No)
                 {
                     bool success = true;
@@ -486,12 +486,12 @@ namespace EnhancedDiscordUI
                     {
                         try
                         {
-                            Directory.Delete("./EnhancedDiscord", true);
-                            Directory.Delete("./EnhancedDiscord", false);
+                            Directory.Delete("./SmartCord", true);
+                            Directory.Delete("./SmartCord", false);
                         }
                         catch (Exception e)
                         {
-                            StatusText.Text = "Failed to delete EnhancedDiscord directory.";
+                            StatusText.Text = "Failed to delete SmartCord directory.";
                             Logger.Error(StatusText.Text + " " + e.Message);
                         }
                         try
@@ -560,11 +560,11 @@ namespace EnhancedDiscordUI
         {
             if (platform == "Windows")
             {
-                startDetached("", ".\\EnhancedDiscord");
+                startDetached("", ".\\SmartCord");
             }
             else if (platform == "Mac")
             {
-                startDetached("open", "./EnhancedDiscord");
+                startDetached("open", "./SmartCord");
             }
         }
 
@@ -592,7 +592,7 @@ namespace EnhancedDiscordUI
             InstallProgress.Show();
             InstallProgress.Value = 0;
        
-            string tempPath = Path.Combine(Path.GetTempPath(), "EnhancedDiscord");
+            string tempPath = Path.Combine(Path.GetTempPath(), "SmartCord");
             if (Directory.Exists(tempPath))
             {
                 try
@@ -609,7 +609,7 @@ namespace EnhancedDiscordUI
 
             StatusText.Text = "Downloading package...";
             Logger.Log(StatusText.Text);
-            string zipPath = Path.Combine(tempPath, "EnhancedDiscord.zip");
+            string zipPath = Path.Combine(tempPath, "SmartCord.zip");
             string zipLink = Properties.Resources.zipLink + branch;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Ssl3;
             WebClient wc = new WebClient();
@@ -639,8 +639,8 @@ namespace EnhancedDiscordUI
             StatusText.Text = "Finished extracting zip. Checking core...";
             Logger.Log(StatusText.Text);
 
-            string extractedPath = Path.Combine(tempPath, "EnhancedDiscord-" + branch);
-            string enhancedPath = "./EnhancedDiscord";
+            string extractedPath = Path.Combine(tempPath, "SmartCord-" + branch);
+            string enhancedPath = "./SmartCord";
 
             if (!File.Exists(Path.Combine(enhancedPath, "config.json")))
             {
@@ -745,6 +745,11 @@ namespace EnhancedDiscordUI
             fileStream2.Close();
 
             return ((fileByte1 - fileByte2) == 0);
+        }
+
+        private void Title_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

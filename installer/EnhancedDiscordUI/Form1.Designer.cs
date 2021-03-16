@@ -72,11 +72,12 @@
             this.Title.AutoSize = true;
             this.Title.Font = new System.Drawing.Font("Segoe UI Semibold", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Title.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.Title.Location = new System.Drawing.Point(131, 11);
+            this.Title.Location = new System.Drawing.Point(149, 12);
             this.Title.Name = "Title";
-            this.Title.Size = new System.Drawing.Size(255, 41);
+            this.Title.Size = new System.Drawing.Size(166, 41);
             this.Title.TabIndex = 1;
-            this.Title.Text = "EnhancedDiscord";
+            this.Title.Text = "SmartCord";
+            this.Title.Click += new System.EventHandler(this.Title_Click);
             // 
             // UninstallButton
             // 
@@ -286,10 +287,10 @@
             // pictureBox1
             // 
             this.pictureBox1.Image = global::EnhancedDiscordUI.Properties.Resources.ed_og;
-            this.pictureBox1.Location = new System.Drawing.Point(41, 12);
+            this.pictureBox1.Location = new System.Drawing.Point(56, 3);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(87, 50);
+            this.pictureBox1.Size = new System.Drawing.Size(87, 61);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 4;
             this.pictureBox1.TabStop = false;
@@ -349,7 +350,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Name = "EDInstaller";
-            this.Text = "EnhancedDiscord Installer";
+            this.Text = "SmartCord Installer";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
