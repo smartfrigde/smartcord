@@ -10,9 +10,9 @@ Support server:
 
 ### Installing
 
-Currently we have no actual installer. This will change in near future but for now you can follow those steps:
+Currently only Windows has fully working installer, Linux is experimental but first method should work:
 #
-1.Windows - Install EnhancedDiscord Beta like you would normally do and replace files with SmartCord ones
+1.Windows - Use installer from latest release. (SmartCord.exe)
 #
 2.Linux - Use this installer and then replace files with SmartCord ones (https://github.com/joe27g/LinuxED/tree/patch-1) or use new experimental installer (https://github.com/smartfrigde/LinuxED)
 
