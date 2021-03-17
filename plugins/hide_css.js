@@ -17,7 +17,7 @@ module.exports = new Plugin({
     preload: false,
     color: "#f44336",
     load: () => document.onkeyup = (key) => {
-        if (key.code === 'Pause') {
+        if (key.code === 'Delete') {
             toggleCSS();
             setTimeout(function () {
                 toggleCSS();
