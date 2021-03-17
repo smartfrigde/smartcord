@@ -2,7 +2,7 @@ require('./main_process_shit');
 const electron = require('electron');
 const path = require('path');
 electron.app.commandLine.appendSwitch("no-force-async-hooks-checks");
-
+global.onerror = null;
 electron.session.defaultSession.webRequest.onHeadersReceived(function(details, callback) {
     if (!details.responseHeaders['content-security-policy-report-only'] && !details.responseHeaders['content-security-policy']) return callback({cancel: false});
     delete details.responseHeaders['content-security-policy-report-only'];
