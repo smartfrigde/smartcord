@@ -6,7 +6,7 @@ Support server:
 
 #### DISCLAIMER!
 > **Using SmartCord, or any other client mod, is against [Discord's Terms of Service](https://discordapp.com/terms). Use it at your own risk.**
-> *It's very unlikely any action will be taken against you, but we take no responsibility if anything happens.*
+> *It's very unlikely any action will be taken against you (if you don't api abuse), but we take no responsibility if anything happens.*
 
 ### Installing
 
@@ -39,6 +39,9 @@ Feel free to chat in our [support server](https://discord.gg/F25bc4RYDt). We hav
 ### Contributing
 
 Feel free to make pull requests or make your own plugins repository. If you do make your own plugins, request the 'Plugin Developer' role in the support server so you can announce your releases!
+
+### Security or lack of it
+Modding your Discord client is not secure. It tweaks Discord security so **unofficial** plugins and themes can load. If you take security very seriously then don't use **any** mod client. But if you don't install unknown plugins nothing bad will happen *probably*. When using plugins that are included with SmartCord there's really small chance of you getting any harm. Stay safe and don't download plugins from shady sources.
 
 ### Credits
 
