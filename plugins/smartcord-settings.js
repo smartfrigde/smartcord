@@ -257,7 +257,7 @@ module.exports = new Plugin({
         e(
           FormSection,
           { title: "SmartCord Settings", tag: "h2" },
-          e(BDPluginToggle),
+          /*e(BDPluginToggle),*/
           Object.keys(ED.plugins)
             .filter(module.exports.utils.shouldPluginRender)
             .map((id, index) => e(PluginSettings, { id, index }))
@@ -415,7 +415,7 @@ module.exports = new Plugin({
       );
     };
 
-    const BDPluginToggle = () => {
+    /*const BDPluginToggle = () => {
       const [enabled, setEnabled] = useState(ED.config.bdPlugins);
 
       useEffect(() => {
@@ -436,7 +436,7 @@ module.exports = new Plugin({
         },
         "BetterDiscord Plugins (Experimental)"
       );
-    };
+    };*/
 
     const OpenPluginDirBtn = () => {
       const [string, setString] = useState("Open Plugins Directory");
@@ -898,7 +898,7 @@ module.exports = new Plugin({
       PluginListing,
       PluginSettings,
       PluginSection,
-      BDPluginToggle,
+      // BDPluginToggle,
       OpenPluginDirBtn,
       __VariableTypeRenderer: VariableTypeRenderer,
       __DiscordUIGenerator: DiscordUIGenerator,
