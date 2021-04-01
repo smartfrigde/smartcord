@@ -173,7 +173,7 @@ process.once('loaded', async () => {
     });
     c.log(`Modules done loading (${Object.keys(window.req.c).length})`);
 
-    if (ED.config.bdPlugins) {
+    /*if (ED.config.bdPlugins) {
         try {
             await require('./bd_shit').setup();
             c.log(`Preparing BD plugins...`);
@@ -201,7 +201,7 @@ process.once('loaded', async () => {
         catch (err) {
             c.warn(`Failed to load BD plugins support: ${err}\n${err.stack}`);
         }
-    }
+    }*/
 
     c.log(`Loading plugins...`);
     for (const id in plugins) {
