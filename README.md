@@ -2,7 +2,7 @@
 Fork of EnhancedDiscord which wants to maintain it!
 
 Support server:
-(https://discord.gg/F25bc4RYDt)
+(https://discord.gg/F25bc4RYDt or https://guilded.gg/SmartCord)
 
 #### DISCLAIMER!
 > **Using SmartCord, or any other client mod, is against [Discord's Terms of Service](https://discordapp.com/terms). Use it at your own risk.**
