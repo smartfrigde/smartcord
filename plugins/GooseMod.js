@@ -6,7 +6,7 @@ module.exports = new Plugin({
     "smartfridge#0001" /* [Optional] Put your name here to give yourself credit for making it :) */,
   description:
     "Loads GooseMod Plugins" /* Description of what this plugin does. */,
-  preload: false /* [Optional] If true, load this before Discord has finished starting up */,
+  preload: true /* [Optional] If true, load this before Discord has finished starting up */,
   color:
     "#646" /* [Optional] The color that this plugin shows in logs and in the plugin settings tab. Any valid CSS color will work here. */,
   disabledByDefault: true /* [Optional] If true, disable the plugin until the user enables it in settings */,
