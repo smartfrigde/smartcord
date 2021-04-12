@@ -24,6 +24,10 @@ By default, the official [EnhancedDiscord/SmartCord theme](https://smartfrigde.g
 
 A list of included plugins and their purpose is included on the [plugins wiki page](https://github.com/joe27g/EnhancedDiscord/wiki/Plugins). It also includes some sources for finding new SC plugins.
 
+### GooseMod Plugins/Themes Support
+
+SmartCord 1.6 and newer now support GooseMod Plugins and Themes! Enable it in your settings.
+
 ### Custom plugins
 
 For info about how to create your own plugins, check out the [custom plugins wiki page](https://github.com/joe27g/EnhancedDiscord/wiki/Custom-plugins).
