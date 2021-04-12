@@ -3,7 +3,7 @@ const Plugin = require("../plugin");
 module.exports = new Plugin({
   name: "GooseMod Plugin Loader" /* Human-readable plugin name. */,
   author:
-    "Joe" /* [Optional] Put your name here to give yourself credit for making it :) */,
+    "smartfridge#0001" /* [Optional] Put your name here to give yourself credit for making it :) */,
   description:
     "Loads GooseMod Plugins" /* Description of what this plugin does. */,
   preload: false /* [Optional] If true, load this before Discord has finished starting up */,
