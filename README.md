@@ -18,11 +18,11 @@ Currently only Windows has fully working installer, Linux is experimental but fi
 
 ### Themes
 
-By default, the official [EnhancedDiscord/SmartCord theme](https://smartfrigde.github.io/smartcord/smartcord.css) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/joe27g/EnhancedDiscord/wiki/FAQ).
+By default, the official [EnhancedDiscord/SmartCord theme](https://smartfrigde.github.io/smartcord/smartcord.css) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/smartfrigde/smartcord/wiki/FAQ).
 
 ### Plugins
 
-A list of included plugins and their purpose is included on the [plugins wiki page](https://github.com/joe27g/EnhancedDiscord/wiki/Plugins). It also includes some sources for finding new SC plugins.
+A list of included plugins and their purpose is included on the [plugins wiki page](https://github.com/smartfrigde/smartcord/wiki/Plugins). It also includes some sources for finding new SC plugins.
 
 ### GooseMod Plugins/Themes Support
 
@@ -34,7 +34,7 @@ For info about how to create your own plugins, check out the [custom plugins wik
 
 ### Having issues?
 
-First, check out the [FAQ](https://github.com/joe27g/EnhancedDiscord/wiki/FAQ) to see if your issue is listed there. If not, ask in #support in the support server (link below.)
+First, check out the [FAQ](https://github.com/smartfrigde/smartcord/wiki/FAQ) to see if your issue is listed there. If not, ask in #support in the support server (link below.)
 
 ### Suggestions? Comments?
 
