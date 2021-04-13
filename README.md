@@ -14,7 +14,7 @@ Currently only Windows has fully working installer, Linux is experimental but fi
 #
 1.Windows - Use installer from latest release. (SmartCord.exe)
 #
-2.Linux - Use this installer and then replace files with SmartCord ones (https://github.com/joe27g/LinuxED/tree/patch-1) or use new experimental installer (https://github.com/smartfrigde/LinuxED)
+2.Linux - https://github.com/smartfrigde/LinuxSC
 
 ### Themes
 
