@@ -4,6 +4,7 @@ const readFile = require('util').promisify(fs.readFile);
 const writeFile = require('util').promisify(fs.writeFile);
 const path = require('path');
 const crypto = require('crypto');
+const goosemod = require('./goosemod');
 const file_blacklist = ["README.md", "installer"];
 
 module.exports = new Plugin({
@@ -45,12 +46,12 @@ module.exports = new Plugin({
     },
 
     notify: function () {
-        //EDApi.showToast("Updates are available!");
+        EDApi.alert("Updater", "Installed Updates")
         // TODO: better way of displaying this
     },
 
     showChangelog: function () {
-        //EDApi.showToast("Changelog from last update: " + this.settings.latest_commit_message);
+        EDApi.alert("Changelog from last update: ",  this.settings.latest_commit_message);
         // TODO: better way of displaying this
         this.setSetting('viewed_changelog', true);
     },
@@ -238,7 +239,7 @@ module.exports = new Plugin({
                 onClick: setName => {
                     setName('Checking...');
                     this.checkForUpdates.bind(module.exports)().then(u => {
-                        //EDApi.showToast(u ? "Found updates!" : "No updates.");
+                        EDApi.alert("Updater", "Found updates");
                         setName("Check for Updates");
                     })
                 }
