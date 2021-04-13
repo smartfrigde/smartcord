@@ -10,11 +10,11 @@ Support server:
 
 ### Installing
 Discord Stable is recommended.
-Currently only Windows has fully working installer, Linux is experimental but first method should work:
-#
-1.Windows - Use installer from latest release. (SmartCord.exe)
-#
-2.Linux - https://github.com/smartfrigde/LinuxSC
+Currently only Windows has fully working installer, Linux is experimental but first method should work:   
+
+1.Windows - Use installer from latest release. (SmartCord.exe)   
+
+2.Linux - https://github.com/smartfrigde/LinuxSC   
 
 ### Themes
 
