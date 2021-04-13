@@ -45,12 +45,12 @@ module.exports = new Plugin({
     },
 
     notify: function () {
-        EDApi.showToast("Updates are available!");
+        //EDApi.showToast("Updates are available!");
         // TODO: better way of displaying this
     },
 
     showChangelog: function () {
-        EDApi.showToast("Changelog from last update: " + this.settings.latest_commit_message);
+        //EDApi.showToast("Changelog from last update: " + this.settings.latest_commit_message);
         // TODO: better way of displaying this
         this.setSetting('viewed_changelog', true);
     },
@@ -238,7 +238,7 @@ module.exports = new Plugin({
                 onClick: setName => {
                     setName('Checking...');
                     this.checkForUpdates.bind(module.exports)().then(u => {
-                        EDApi.showToast(u ? "Found updates!" : "No updates.");
+                        //EDApi.showToast(u ? "Found updates!" : "No updates.");
                         setName("Check for Updates");
                     })
                 }
