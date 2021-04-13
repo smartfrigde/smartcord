@@ -131,7 +131,7 @@ process.once('loaded', async () => {
 
     // work-around to wait for webpack
     while (true) {
-        await c.sleep(10000);
+        await c.sleep(1000);
         if(electron.webFrame.top.context.window && electron.webFrame.top.context.window.webpackJsonp) break;
     };
     
