@@ -125,7 +125,16 @@ module.exports = new Plugin({
 
     settingsSectionName: 'Theme Settings (Experimental)',
     generateSettingsSection: function() {
-        if (!ED.plugins.css_loader || !ED.customCss || !ED.customCss.innerHTML || (!ED.customCss.innerHTML.includes(" ") && !ED.customCss.innerHTML.includes(" "))) return;
+        if (
+          !ED.plugins.css_loader ||
+          !ED.customCss ||
+          !ED.customCss.innerHTML ||
+          (!ED.customCss.innerHTML.includes(
+            "https://smartfrigde.github.io/smartcord/smartcord.css"
+          ) &&
+            !ED.customCss.innerHTML.includes(" "))
+        )
+          return;
 
         const els = [{
             type: "input:text",
