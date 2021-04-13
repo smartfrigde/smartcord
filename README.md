@@ -1,5 +1,5 @@
 # SmartCord
-Fork of EnhancedDiscord which wants to maintain it!
+A lightweight client mod based on EnhancedDiscord designed to enhance your Discord experience without slowing down your PC.
 
 Support server:
 (https://discord.gg/F25bc4RYDt or https://guilded.gg/SmartCord)
