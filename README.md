@@ -49,4 +49,4 @@ Modding your Discord client is not secure. It tweaks Discord security so **unoff
 
 ### Credits
 
-Big shotout to EnhancedDiscord developers and plugin makers. This project is just "personalized" fork of EnhancedDiscord that wants to continue it's development in it's own way. I'm not professional coder and I suck lol. Don't expect high tier coding or good coding at all. I used few scripts/snippets shared on EnhancedDiscord server huge thanks to developers of those. I also used parts of GooseMod code for it's support and ported plugins.
+Big shotout to EnhancedDiscord developers and plugin makers. This project is just "personalized" fork of EnhancedDiscord that wants to continue it's development in it's own way. I'm not experienced coder and I suck lol. Don't expect high tier coding or good coding at all. I used few scripts/snippets shared on EnhancedDiscord server huge thanks to developers of those. I also used parts of GooseMod code for it's support and ported plugins.
