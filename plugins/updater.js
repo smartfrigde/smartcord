@@ -227,7 +227,7 @@ module.exports = new Plugin({
             },
             {
                 type: "std:description",
-                content: `Local revision: ${this.settings.current_rev ? `\`${this.settings.current_rev.substr(0, 7)}\`` : 'unknown'} (ED v${ED.version}) | Status: ${this.isUpdateAvailable() ? 'Update available' : 'Up-to-date'}`
+                content: `Local revision: ${this.settings.current_rev ? `\`${this.settings.current_rev.substr(0, 7)}\`` : 'unknown'} (SmartCord v${ED.version}) | Status: ${this.isUpdateAvailable() ? 'Update available' : 'Up-to-date'}`
             },
             {
                 type: "std:spacer",

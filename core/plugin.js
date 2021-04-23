@@ -1,3 +1,4 @@
+
 /**
  * Plugin Class
  */
@@ -34,8 +35,10 @@ class Plugin {
     reload () {
         this.log('Reloading...');
         this.unload();
-        delete require.cache[require.resolve(`./plugins/${this.id}`)];
-        const newPlugin = require(`./plugins/${this.id}`);
+        delete require.cache[
+          require.resolve(process.env.injDir + `/plugins/${this.id}`)
+        ];
+        const newPlugin = require(process.env.injDir + `/plugins/${this.id}`);
         ED.plugins[this.id] = newPlugin;
         newPlugin.id = this.id;
         return newPlugin.load();

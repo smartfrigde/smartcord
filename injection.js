@@ -1,4 +1,4 @@
-require('./main_process_shit');
+require('./core/main_process');
 const electron = require('electron');
 const path = require('path');
 electron.app.commandLine.appendSwitch("no-force-async-hooks-checks");
@@ -15,7 +15,7 @@ class BrowserWindow extends electron.BrowserWindow {
         if (!originalOptions || !originalOptions.webPreferences || !originalOptions.title) return win; // eslint-disable-line constructor-super
         const originalPreloadScript = originalOptions.webPreferences.preload;
 
-        originalOptions.webPreferences.preload = path.join(process.env.injDir, 'dom_shit.js');
+        originalOptions.webPreferences.preload = path.join(process.env.injDir, '\\core\\dom.js');
         originalOptions.webPreferences.transparency = false;
 
         win = new electron.BrowserWindow(originalOptions);

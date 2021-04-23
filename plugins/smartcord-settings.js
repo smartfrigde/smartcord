@@ -1,5 +1,5 @@
 const Plugin = require("../plugin");
-const BD = require("../bd_shit");
+//const BD = require("../bd_shit");
 
 const edSettingsID = require("path").parse(__filename).name;
 
