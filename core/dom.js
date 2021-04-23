@@ -531,60 +531,298 @@ window.EDApi = window.BdApi = class EDApi {
     }
 };
 
-window.BdApi.Plugins = new class AddonAPI {
+window.EDApi = window.BdApi = class EDApi {
+    static get React() { return this.findModuleByProps('createElement'); }
+    static get ReactDOM() { return this.findModuleByProps('findDOMNode'); }
 
-    get folder() {return path.join(process.env.injDir, 'plugins');}
+    static escapeID(id) {
+        return id.replace(/^[^a-z]+|[^\w-]+/gi, '');
+    }
 
-    isEnabled(name) {
+    static injectCSS(id, css) {
+        const style = document.createElement('style');
+		style.id = this.escapeID(id);
+		style.innerHTML = css;
+		document.head.append(style);
+    }
+
+    static clearCSS(id) {
+		const element = document.getElementById(this.escapeID(id));
+		if (element) element.remove();
+    }
+
+    static linkJS(id, url) {
+        return new Promise(resolve => {
+			const script = document.createElement('script');
+			script.id = this.escapeID(id);
+			script.src = url;
+			script.type = 'text/javascript';
+			script.onload = resolve;
+			document.head.append(script);
+		});
+    }
+
+    static unlinkJS(id) {
+        const element = document.getElementById(this.escapeID(id));
+		if (element) element.remove();
+    }
+
+    static getPlugin(name) {
+        const plugin = Object.values(ED.plugins).find(p => p.name == name);
+        if (!plugin) return null;
+        return plugin.bdplugin ? plugin.bdplugin : plugin;
+    }
+
+    static alert(title, body) {
+        return this.showConfirmationModal(title, body, {cancelText: null});
+    }
+
+    /**
+     * Shows a generic but very customizable confirmation modal with optional confirm and cancel callbacks.
+     * @param {string} title - title of the modal
+     * @param {(string|ReactElement|Array<string|ReactElement>)} children - a single or mixed array of react elements and strings. Every string is wrapped in Discord's `Markdown` component so strings will show and render properly.
+     * @param {object} [options] - options to modify the modal
+     * @param {boolean} [options.danger=false] - whether the main button should be red or not
+     * @param {string} [options.confirmText=Okay] - text for the confirmation/submit button
+     * @param {string} [options.cancelText=Cancel] - text for the cancel button
+     * @param {callable} [options.onConfirm=NOOP] - callback to occur when clicking the submit button
+     * @param {callable} [options.onCancel=NOOP] - callback to occur when clicking the cancel button
+     * @param {string} [options.key] - key used to identify the modal. If not provided, one is generated and returned
+     * @returns {string} - the key used for this modal
+     */
+    static showConfirmationModal(title, content, options = {}) {
+        const ModalActions = this.findModuleByProps('openModal', 'updateModal');
+        const Markdown = this.findModuleByDisplayName('Markdown');
+        const ConfirmationModal = this.findModuleByDisplayName('ConfirmModal');
+        if (!ModalActions || !ConfirmationModal || !Markdown) return window.alert(content);
+
+        const emptyFunction = () => {};
+        const {onConfirm = emptyFunction, onCancel = emptyFunction, confirmText = 'Okay', cancelText = 'Cancel', danger = false, key = undefined} = options;
+
+        if (!Array.isArray(content)) content = [content];
+        content = content.map(c => typeof(c) === 'string' ? this.React.createElement(Markdown, null, c) : c);
+        return ModalActions.openModal(props => {
+            return this.React.createElement(ConfirmationModal, Object.assign({
+                header: title,
+                red: danger,
+                confirmText: confirmText,
+                cancelText: cancelText,
+                onConfirm: onConfirm,
+                onCancel: onCancel
+            }, props), content);
+        }, {modalKey: key});
+    }
+
+    static loadPluginSettings(pluginName) {
+        const pl = ED.plugins[pluginName];
+        if (!pl) return null;
+
+        if (!ED.config[pluginName]) {
+            this.savePluginSettings(pluginName, pl.defaultSettings || {enabled: !pl.disabledByDefault});
+        }
+        return ED.config[pluginName];
+    }
+
+    static savePluginSettings(pluginName, data) {
+        const pl = ED.plugins[pluginName];
+        if (!pl) return null;
+        ED.config[pluginName] = data;
+        ED.config = ED.config; // eslint-disable-line no-self-assign
+    }
+
+    static loadData(pluginName, key) {
+        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        if (!pl) return null;
+        const id = pl.id;
+    
+        if (!ED.plugins[id]) return null;
+        return this.loadPluginSettings(id)[key];
+    }
+
+    static saveData(pluginName, key, data) {
+        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        if (!pl) return null;
+        const id = pl.id;
+    
+        const obj = this.loadPluginSettings(id);
+        obj[key] = data;
+        return this.savePluginSettings(id, obj);
+    }
+
+    static getData(pluginName, key) {
+        return this.loadData(pluginName, key);
+    }
+
+    static setData(pluginName, key, data) {
+        this.saveData(pluginName, key, data);
+    }
+
+    static getInternalInstance(node) {
+        if (!(node instanceof window.jQuery) && !(node instanceof Element)) return undefined;
+        if (node instanceof window.jQuery) node = node[0];
+        return node[Object.keys(node).find(k => k.startsWith('__reactInternalInstance'))];
+    }
+
+    static showToast(content, options = {}) {	
+        if (!document.querySelector('.toasts')) {
+            const container = document.querySelector('.sidebar-2K8pFh + div') || null;
+            const memberlist = container ? container.querySelector('.membersWrap-2h-GB4') : null;
+            const form = container ? container.querySelector('form') : null;
+            const left = container ? container.getBoundingClientRect().left : 310;
+            const right = memberlist ? memberlist.getBoundingClientRect().left : 0;
+            const width = right ? right - container.getBoundingClientRect().left : Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - left - 240;
+            const bottom = form ? form.offsetHeight : 80;
+            const toastWrapper = document.createElement('div');
+            toastWrapper.classList.add('toasts');
+            toastWrapper.style.setProperty('left', left + 'px');
+            toastWrapper.style.setProperty('width', width + 'px');
+            toastWrapper.style.setProperty('bottom', bottom + 'px');
+            document.querySelector('#app-mount').appendChild(toastWrapper);
+        }
+        const {type = '', icon = true, timeout = 3000} = options;
+        const toastElem = document.createElement('div');
+        toastElem.classList.add('toast');
+        if (type) toastElem.classList.add('toast-' + type);
+        if (type && icon) toastElem.classList.add('icon');
+        toastElem.innerText = content;
+        document.querySelector('.toasts').appendChild(toastElem);
+        setTimeout(() => {
+            toastElem.classList.add('closing');
+            setTimeout(() => {
+                toastElem.remove();
+                if (!document.querySelectorAll('.toasts .toast').length) document.querySelector('.toasts').remove();
+            }, 300);
+        }, timeout);
+    }
+
+    static findModule(filter, silent = true) {
+        const moduleName = typeof filter === 'string' ? filter : null;
+        for (const i in window.req.c) {
+            if (window.req.c.hasOwnProperty(i)) {
+                const m = window.req.c[i].exports;
+                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default))) return m.default;
+                if (m && (moduleName ? m[moduleName] : filter(m)))	return m;
+            }
+        }
+        if (!silent) c.warn(`Could not find module ${module}.`, {name: 'Modules', color: 'black'});
+        return null;
+    }
+
+    static findRawModule(filter, silent = true) {
+        const moduleName = typeof filter === 'string' ? filter : null;
+        for (const i in window.req.c) {
+            if (window.req.c.hasOwnProperty(i)) {
+                const m = window.req.c[i].exports;
+                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default)))
+                    return window.req.c[i];
+                if (m && (moduleName ? m[moduleName] : filter(m)))
+                    return window.req.c[i];
+            }
+        }
+        if (!silent) c.warn(`Could not find module ${module}.`, {name: 'Modules', color: 'black'});
+        return null;
+    }
+
+    static findAllModules(filter) {
+        const moduleName = typeof filter === 'string' ? filter : null;
+        const modules = [];
+        for (const i in window.req.c) {
+            if (window.req.c.hasOwnProperty(i)) {
+                const m = window.req.c[i].exports;
+                if (m && m.__esModule && m.default && (moduleName ? m.default[moduleName] : filter(m.default))) modules.push(m.default);
+                else if (m && (moduleName ? m[moduleName] : filter(m))) modules.push(m);
+            }
+        }
+        return modules;
+    }
+
+    static findModuleByProps(...props) {
+        return this.findModule(module => props.every(prop => module[prop] !== undefined));
+    }
+
+    static findModuleByDisplayName(name) {
+        return this.findModule(module => module.displayName === name);
+    }
+
+    static monkeyPatch(what, methodName, options) {
+        if (typeof options === 'function') {
+            const newOptions = {instead: options, silent: true};
+            options = newOptions;
+        }
+        const {before, after, instead, once = false, silent = false, force = false} = options;
+        const displayName = options.displayName || what.displayName || what.name || what.constructor ? (what.constructor.displayName || what.constructor.name) : null;
+        if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Patched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+        if (!what[methodName]) {
+            if (force) what[methodName] = function() {};
+            else return console.warn(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Method ${methodName} doesn't exist in module ${displayName || '<unknown>'}`, what); // eslint-disable-line no-console
+        }
+        const origMethod = what[methodName];
+        const cancel = () => {
+            if (!silent) console.log(`%c[SmartCord] %c[Modules]`, 'color: red;', `color: black;`, `Unpatched ${methodName} in module ${displayName || '<unknown>'}:`, what); // eslint-disable-line no-console
+            what[methodName] = origMethod;
+        };
+        what[methodName] = function() {
+            const data = {
+                thisObject: this,
+                methodArguments: arguments,
+                cancelPatch: cancel,
+                originalMethod: origMethod,
+                callOriginalMethod: () => data.returnValue = data.originalMethod.apply(data.thisObject, data.methodArguments)
+            };
+            if (instead) {
+                const tempRet = EDApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
+                if (tempRet !== undefined) data.returnValue = tempRet;
+            }
+            else {
+                if (before) EDApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
+                data.callOriginalMethod();
+                if (after) EDApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
+            }
+            if (once) cancel();
+            return data.returnValue;
+        };
+        what[methodName].__monkeyPatched = true;
+        what[methodName].displayName = 'patched ' + (what[methodName].displayName || methodName);
+        what[methodName].unpatch = cancel;
+        return cancel;
+    }
+
+    static testJSON(data) {
+        try {
+            return JSON.parse(data);
+        }
+        catch (err) {
+            return false;
+        }
+    }
+
+    static suppressErrors(method, description) {
+        return (...params) => {
+            try { return method(...params);	}
+            catch (e) { console.error('Error occurred in ' + description, e); }
+        };
+    }
+
+    static formatString(string, values) {
+        for (const val in values) {
+            string = string.replace(new RegExp(`\\{\\{${val}\\}\\}`, 'g'), values[val]);
+        }
+        return string;
+    }
+
+    static isPluginEnabled(name) {
         const plugins = Object.values(ED.plugins);
         const plugin = plugins.find(p => p.id == name || p.name == name);
         if (!plugin) return false;
         return !(plugin.settings.enabled === false);
     }
 
-    enable(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin || plugin.settings.enabled !== false) return;
-        plugin.settings.enabled = true;
-        ED.plugins[name].settings = plugin.settings;
-        plugin.load();
+    static isThemeEnabled() {
+        return false;
     }
 
-    disable(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin || plugin.settings.enabled === false) return;
-        plugin.settings.enabled = false;
-        ED.plugins[name].settings = plugin.settings;
-        plugin.unload();
-    }
-
-    toggle(name) {
-        if (this.isEnabled(name)) this.disable(name);
-        else this.enable(name);
-    }
-
-    reload(name) {
-        const plugin = ED.plugins[name];
-        if (!plugin) return;
-        plugin.reload();
-    }
-
-    get(name) {
-        return ED.plugins[name] || null;
-    }
-
-    getAll() {
-        return Object.values(ED.plugins);
+    static isSettingEnabled(id) {
+        return ED.config[id];
     }
 };
 
-window.BdApi.Themes = new class AddonAPI {
-    get folder() {return '';}
-    isEnabled() {}
-    enable() {}
-    disable() {}
-    toggle() {}
-    reload() {}
-    get() {return null;}
-    getAll() {return [];}
-};
