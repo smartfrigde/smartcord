@@ -1,4 +1,3 @@
-# YOU ARE VIEWING V2.0 BRANCH WHICH IS UNFINISHED AND EXPERIMENTAL. USE IT AT YOUR OWN RISK
 # SmartCord
 A lightweight client mod based on EnhancedDiscord designed to enhance your Discord experience without slowing down your PC.
 

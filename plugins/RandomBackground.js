@@ -5,7 +5,7 @@ module.exports = new Plugin({
   author:
     "smartfridge#5834" /* [Optional] Put your name here to give yourself credit for making it :) */,
   description:
-    "Shows new background every time you restart Discord" /* Description of what this plugin does. */,
+    "Shows new background every time you restart Discord. (may not work on all themes)" /* Description of what this plugin does. */,
   preload: false /* [Optional] If true, load this before Discord has finished starting up */,
   color:
     "#666" /* [Optional] The color that this plugin shows in logs and in the plugin settings tab. Any valid CSS color will work here. */,
