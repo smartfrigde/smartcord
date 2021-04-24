@@ -4,7 +4,6 @@ const readFile = require('util').promisify(fs.readFile);
 const writeFile = require('util').promisify(fs.writeFile);
 const path = require('path');
 const crypto = require('crypto');
-const goosemod = require('./goosemod');
 const file_blacklist = ["README.md", "installer"];
 
 module.exports = new Plugin({
