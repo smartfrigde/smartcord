@@ -4,7 +4,6 @@ const readFile = require('util').promisify(fs.readFile);
 const writeFile = require('util').promisify(fs.writeFile);
 const path = require('path');
 const crypto = require('crypto');
-const goosemod = require('./goosemod');
 const file_blacklist = ["README.md", "installer"];
 
 module.exports = new Plugin({
@@ -14,7 +13,7 @@ module.exports = new Plugin({
     color: '#7289da',
 
     defaultSettings: {
-        branch: 'main',
+        branch: '2.0',
         auto_check: true,
         auto_update: true,
         notify: true,
@@ -170,6 +169,7 @@ module.exports = new Plugin({
         if (!needUpdate.length) {
             this.setSetting('current_rev', this.settings.latest_commit);
             this.info('installUpdate: already up-to-date.');
+            EDApi.alert("Error!", "No updates were found. Everything is up-to-date!")
             return false; // update not needed
         }
 
@@ -221,74 +221,99 @@ module.exports = new Plugin({
 
     generateSettings: function () {
         return [
-            {
-                type: "std:description",
-                content: `Current branch: \`${this.settings.branch}\` | Latest revision: ${this.settings.latest_commit ? `\`${this.settings.latest_commit.substr(0, 7)}\`` : 'unknown'} | Last update check: ${this.settings.last_check ? this.formatElapsed(this.settings.last_check) : 'never'}`
+          {
+            type: "std:description",
+            content: `Current branch: \`${
+              this.settings.branch
+            }\` | Latest revision: ${
+              this.settings.latest_commit
+                ? `\`${this.settings.latest_commit.substr(0, 7)}\``
+                : "unknown"
+            } | Last update check: ${
+              this.settings.last_check
+                ? this.formatElapsed(this.settings.last_check)
+                : "never"
+            }`,
+          },
+          {
+            type: "std:description",
+            content: `Local revision: ${
+              this.settings.current_rev
+                ? `\`${this.settings.current_rev.substr(0, 7)}\``
+                : "unknown"
+            } (SmartCord v${ED.version}) | Status: ${
+              this.isUpdateAvailable() ? "Update available" : "Up-to-date"
+            }`,
+          },
+          {
+            type: "std:spacer",
+            space: 10,
+          },
+          {
+            type: "input:button",
+            name: "Check for Updates",
+            disabled: !this.isUpdateAvailable(),
+            onClick: (setName) => {
+              setName("Checking...");
+              this.checkForUpdates
+                .bind(module.exports)()
+                .then((u) => {
+                  EDApi.alert("Updater", "Found updates");
+                  setName("Check for Updates");
+                });
             },
-            {
-                type: "std:description",
-                content: `Local revision: ${this.settings.current_rev ? `\`${this.settings.current_rev.substr(0, 7)}\`` : 'unknown'} (SmartCord v${ED.version}) | Status: ${this.isUpdateAvailable() ? 'Update available' : 'Up-to-date'}`
-            },
-            {
-                type: "std:spacer",
-                space: 10
-            },
-            {
-                type: "input:button",
-                name: "Check for Updates",
-                onClick: setName => {
-                    setName('Checking...');
-                    this.checkForUpdates.bind(module.exports)().then(u => {
-                        EDApi.alert("Updater", "Found updates");
-                        setName("Check for Updates");
-                    })
-                }
-            },
-            {
-                type: "input:button",
-                name: "Install Updates",
-                onClick: this.installUpdate.bind(module.exports),
-                disabled: !this.isUpdateAvailable()
-            },
-            {
-                type: "std:spacer",
-                space: 15
-            },
-            {
-                type: "input:boolean",
-                configName: "auto_check",
-                title: "Check for Updates",
-                note: "Automatically check for updates. When deselected, you will have to come back here to see if updates are available."
-            },
-            {
-                type: "input:boolean",
-                configName: "notify",
-                title: "Notify for New Updates",
-                note: `Show a notification when updates are available ${this.settings && this.settings.auto_update ? "or being downloaded" : "and an option to install them"}.`,
-                disabled: !(this.settings && this.settings.auto_check)
-            },
-            {
-                type: "input:boolean",
-                configName: "changelogs",
-                title: "Show Change Notes",
-                note: `Show a notification with change notes after updates are installed.`,
-                disabled: !(this.settings && this.settings.auto_check)
-            },
-            {
-                type: "input:boolean",
-                configName: "auto_update",
-                title: "Automatic Updates",
-                note: "Automatically download and install updates in the background. When deselected, updates will only be applied when you choose.",
-                disabled: !(this.settings && this.settings.auto_check)
-            },
-            {
-                type: "input:text",
-                configName: "branch",
-                title: "Branch",
-                desc: "Which branch to fetch from GitHub. The default (stable) branch is **main**. The **beta** branch includes new features, sometimes experimental or incomplete. You can also specify a fork with github_username/repo_name/branch_name.",
-                placeholder: "main, beta, urmom/gay/main etc...",
-                mini: true
-            }
-        ]
+          },
+          {
+            type: "input:button",
+            name: "Install Updates",
+            onClick: this.installUpdate.bind(module.exports),
+            disabled: !this.isUpdateAvailable(),
+          },
+          {
+            type: "std:spacer",
+            space: 15,
+          },
+          {
+            type: "input:boolean",
+            configName: "auto_check",
+            title: "Check for Updates",
+            note:
+              "Automatically check for updates. When deselected, you will have to come back here to see if updates are available.",
+          },
+          {
+            type: "input:boolean",
+            configName: "notify",
+            title: "Notify for New Updates",
+            note: `Show a notification when updates are available ${
+              this.settings && this.settings.auto_update
+                ? "or being downloaded"
+                : "and an option to install them"
+            }.`,
+            disabled: !(this.settings && this.settings.auto_check),
+          },
+          {
+            type: "input:boolean",
+            configName: "changelogs",
+            title: "Show Change Notes",
+            note: `Show a notification with change notes after updates are installed.`,
+            disabled: !(this.settings && this.settings.auto_check),
+          },
+          {
+            type: "input:boolean",
+            configName: "auto_update",
+            title: "Automatic Updates",
+            note:
+              "Automatically download and install updates in the background. When deselected, updates will only be applied when you choose.",
+            disabled: !(this.settings && this.settings.auto_check),
+          },
+          {
+            type: "input:text",
+            configName: "branch",
+            title: "Branch",
+            desc: `Which branch to fetch from GitHub. The branch you are currently running is **${this.settings.branch}**. The **2.0** branch includes new features, sometimes experimental or incomplete. You can also specify a fork with github_username/repo_name/branch_name.`,
+            placeholder: "main, beta, 2.0, canary, fix1 etc. etc.",
+            mini: true,
+          },
+        ];
     }
 });
