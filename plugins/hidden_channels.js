@@ -186,7 +186,7 @@ module.exports = new Plugin({
       return egg;
     });
 
-    /*ghp = EDApi.findModuleByDisplayName("FluxContainer(GuildHeaderPopout)").prototype;
+    ghp = EDApi.findModuleByDisplayName("FluxContainer(GuildHeaderPopout)").prototype;
         EDApi.monkeyPatch(ghp, 'render', b => {
             const egg = b.callOriginalMethod(b.methodArguments);
             egg.props.canAccessSettings = true;
@@ -200,7 +200,7 @@ module.exports = new Plugin({
             module.exports._editingGuild = egg.props.guild.id;
             egg.props.canManageRoles = true;
             return egg;
-        });*/
+        });
 
     const cancan = EDApi.findModuleByProps("can").can;
     gsr = EDApi.findModuleByDisplayName("FluxContainer(GuildSettingsRoles)")
