@@ -9,8 +9,9 @@ Support server:
 > *It's very unlikely any action will be taken against you (if you don't api abuse), but we take no responsibility if anything happens.*
 
 ### Installing
-Discord Stable is recommended.
-Currently only Windows has fully working installer, Linux is experimental but first method should work:   
+If you want to install SmartCord you should use [GooseUpdate](https://updates.goosemod.com/#install). It's a installer made by Ducko GooseMod Developer which allows you to install SmartCord alongside GooseMod!  
+  
+Alternatives to GooseUpdate (not recommended/might break):
 
 1.Windows - Use installer from latest release. (SmartCord.exe)   
 
