@@ -10,12 +10,7 @@ Support server:
 
 ### Installing
 If you want to install SmartCord you should use [GooseUpdate](https://updates.goosemod.com/#install). It's a installer made by Ducko GooseMod Developer which allows you to install SmartCord alongside GooseMod!  
-  
-Alternatives to GooseUpdate (not recommended/might break):
-
-1.Windows - Use installer from latest release. (SmartCord.exe)   
-
-2.Linux - https://github.com/smartfrigde/LinuxSC   
+Manual Installation can be found on Wiki section.
 
 ### Themes
 
