@@ -50,8 +50,8 @@ const c = {
 };
 
 // config util
-window.ED = { plugins: {}, version: '2.0' };
-Object.defineProperty(ED, 'config', {
+window.SC = { plugins: {}, version: '2.0' };
+Object.defineProperty(SC, 'config', {
     get: function() {
         let conf;
         try{
@@ -98,15 +98,15 @@ function loadPlugin(plugin) {
     }
 }
 
-ED.localStorage = window.localStorage;
+SC.localStorage = window.localStorage;
 
 process.once('loaded', async () => {
-    c.log(`v${ED.version} is running. Validating plugins...`);
+    c.log(`v${SC.version} is running. Validating plugins...`);
 
     const pluginFiles = fs.readdirSync(path.join(process.env.injDir, 'plugins'));
     const plugins = {};
     for (const i in pluginFiles) {
-        if (!pluginFiles[i].endsWith('.js') || pluginFiles[i].endsWith('.plugin.js')) continue;
+        if (!pluginFiles[i].endsWith('.js')) continue;
         let p;
         const pName = pluginFiles[i].replace(/\.js$/, '');
         try {
@@ -126,7 +126,7 @@ process.once('loaded', async () => {
         }
         plugins[id].settings; // this will set default settings in config if necessary
     }
-    ED.plugins = plugins;
+    SC.plugins = plugins;
     c.log(`Plugins validated.`);
 
     // work-around to wait for webpack
@@ -135,7 +135,7 @@ process.once('loaded', async () => {
         if(electron.webFrame.top.context.window && electron.webFrame.top.context.window.webpackJsonp) break;
     };
     
-    ED.webSocket = window._ws;
+    SC.webSocket = window._ws;
 
     /* Add helper functions that make plugins easy to create */
 	window.req = electron.webFrame.top.context.window.webpackJsonp.push([[], {
@@ -144,17 +144,17 @@ process.once('loaded', async () => {
 	delete window.req.m['__extra_id__'];
 	delete window.req.c['__extra_id__'];
 
-    window.findModule = EDApi.findModule;
-    window.findModules = EDApi.findAllModules;
-    window.findRawModule = EDApi.findRawModule;
-    window.monkeyPatch = EDApi.monkeyPatch;
+    window.findModule = SCApi.findModule;
+    window.findModules = SCApi.findAllModules;
+    window.findRawModule = SCApi.findRawModule;
+    window.monkeyPatch = SCApi.monkeyPatch;
 
-    while (!EDApi.findModule('dispatch'))
+    while (!SCApi.findModule('dispatch'))
         await c.sleep(100);
 
     c.log(`Loading preload plugins...`);
     for (const id in plugins) {
-        if (ED.config[id] && ED.config[id].enabled == false) continue;
+        if (SC.config[id] && SC.config[id].enabled == false) continue;
         if (!plugins[id].preload) continue;
         loadPlugin(plugins[id]);
     }
@@ -173,70 +173,41 @@ process.once('loaded', async () => {
     });
     c.log(`Modules done loading (${Object.keys(window.req.c).length})`);
 
-    /*if (ED.config.bdPlugins) {
-        try {
-            await require('./bd_shit').setup();
-            c.log(`Preparing BD plugins...`);
-            for (const i in pluginFiles) {
-                if (!pluginFiles[i].endsWith('.js') || !pluginFiles[i].endsWith('.plugin.js')) continue;
-                let p;
-                const pName = pluginFiles[i].replace(/\.js$/, '');
-                try {
-                    p = require(path.join(process.env.injDir, 'plugins', pName));
-                    if (typeof p.name !== 'string' || typeof p.load !== 'function') {
-                        throw new Error('Plugin must have a name and load() function.');
-                    }
-                    plugins[pName] = Object.assign(p, {id: pName});
-                }
-                catch (err) {
-                    c.warn(`Failed to load ${pluginFiles[i]}: ${err}\n${err.stack}`, p);
-                }
-            }
-            for (const id in plugins) {
-                if (!plugins[id] || !plugins[id].name || typeof plugins[id].load !== 'function') {
-                    c.info(`Skipping invalid plugin: ${id}`); delete plugins[id]; continue;
-                }
-            }
-        }
-        catch (err) {
-            c.warn(`Failed to load BD plugins support: ${err}\n${err.stack}`);
-        }
-    }*/
 
     c.log(`Loading plugins...`);
     for (const id in plugins) {
-        if (ED.config[id] && ED.config[id].enabled == false) continue;
+        if (SC.config[id] && SC.config[id].enabled == false) continue;
         if (plugins[id].preload) continue;
-        if (ED.config[id] && ED.config[id].enabled !== true && plugins[id].disabledByDefault) {
+        if (SC.config[id] && SC.config[id].enabled !== true && plugins[id].disabledByDefault) {
             plugins[id].settings.enabled = false; continue;
         }
         loadPlugin(plugins[id]);
     }
 
 
-    const ht = EDApi.findModule('hideToken');
+    const ht = SCApi.findModule('hideToken');
     // prevent client from removing token from localstorage when dev tools is opened, or reverting your token if you change it
-    EDApi.monkeyPatch(ht, 'hideToken', () => {});
+    SCApi.monkeyPatch(ht, 'hideToken', () => {});
     window.fixedShowToken = () => {
         // Only allow this to add a token, not replace it. This allows for changing of the token in dev tools.
-        if (!ED.localStorage || ED.localStorage.getItem('token')) return;
-        return ED.localStorage.setItem('token', '"' + ht.getToken() + '"');
+        if (!SC.localStorage || SC.localStorage.getItem('token')) return;
+        return SC.localStorage.setItem('token', '"' + ht.getToken() + '"');
     };
-    EDApi.monkeyPatch(ht, 'showToken', window.fixedShowToken);
-    if (!ED.localStorage.getItem('token') && ht.getToken())
+    SCApi.monkeyPatch(ht, 'showToken', window.fixedShowToken);
+    if (!SC.localStorage.getItem('token') && ht.getToken())
         window.fixedShowToken(); // prevent you from being logged out for no reason
 
     // change the console warning to be more fun
     electron.ipcRenderer.invoke('custom-devtools-warning');
     
     // expose stuff for devtools
-    Object.assign(electron.webFrame.top.context.window, {ED, EDApi, BdApi});
+    Object.assign(electron.webFrame.top.context.window, {SC, SCApi, BdApi});
 });
 
 
 
 /* BD/ED joint api */
-window.EDApi = window.BdApi = class EDApi {
+window.SCApi = window.BdApi = class SCApi {
     static get React() { return this.findModuleByProps('createElement'); }
     static get ReactDOM() { return this.findModuleByProps('findDOMNode'); }
 
@@ -273,7 +244,7 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static getPlugin(name) {
-        const plugin = Object.values(ED.plugins).find(p => p.name == name);
+        const plugin = Object.values(SC.plugins).find(p => p.name == name);
         if (!plugin) return null;
         return plugin.bdplugin ? plugin.bdplugin : plugin;
     }
@@ -319,33 +290,33 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static loadPluginSettings(pluginName) {
-        const pl = ED.plugins[pluginName];
+        const pl = SC.plugins[pluginName];
         if (!pl) return null;
 
-        if (!ED.config[pluginName]) {
+        if (!SC.config[pluginName]) {
             this.savePluginSettings(pluginName, pl.defaultSettings || {enabled: !pl.disabledByDefault});
         }
-        return ED.config[pluginName];
+        return SC.config[pluginName];
     }
 
     static savePluginSettings(pluginName, data) {
-        const pl = ED.plugins[pluginName];
+        const pl = SC.plugins[pluginName];
         if (!pl) return null;
-        ED.config[pluginName] = data;
-        ED.config = ED.config; // eslint-disable-line no-self-assign
+        SC.config[pluginName] = data;
+        SC.config = SC.config; // eslint-disable-line no-self-assign
     }
 
     static loadData(pluginName, key) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        const pl = SC.plugins[pluginName] || Object.values(SC.plugins).find(p => p.name === pluginName);
         if (!pl) return null;
         const id = pl.id;
     
-        if (!ED.plugins[id]) return null;
+        if (!SC.plugins[id]) return null;
         return this.loadPluginSettings(id)[key];
     }
 
     static saveData(pluginName, key, data) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        const pl = SC.plugins[pluginName] || Object.values(SC.plugins).find(p => p.name === pluginName);
         if (!pl) return null;
         const id = pl.id;
     
@@ -368,36 +339,13 @@ window.EDApi = window.BdApi = class EDApi {
         return node[Object.keys(node).find(k => k.startsWith('__reactInternalInstance'))];
     }
 
-    static showToast(content, options = {}) {	
-        if (!document.querySelector('.toasts')) {
-            const container = document.querySelector('.sidebar-2K8pFh + div') || null;
-            const memberlist = container ? container.querySelector('.membersWrap-2h-GB4') : null;
-            const form = container ? container.querySelector('form') : null;
-            const left = container ? container.getBoundingClientRect().left : 310;
-            const right = memberlist ? memberlist.getBoundingClientRect().left : 0;
-            const width = right ? right - container.getBoundingClientRect().left : Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - left - 240;
-            const bottom = form ? form.offsetHeight : 80;
-            const toastWrapper = document.createElement('div');
-            toastWrapper.classList.add('toasts');
-            toastWrapper.style.setProperty('left', left + 'px');
-            toastWrapper.style.setProperty('width', width + 'px');
-            toastWrapper.style.setProperty('bottom', bottom + 'px');
-            document.querySelector('#app-mount').appendChild(toastWrapper);
-        }
-        const {type = '', icon = true, timeout = 3000} = options;
-        const toastElem = document.createElement('div');
-        toastElem.classList.add('toast');
-        if (type) toastElem.classList.add('toast-' + type);
-        if (type && icon) toastElem.classList.add('icon');
-        toastElem.innerText = content;
-        document.querySelector('.toasts').appendChild(toastElem);
-        setTimeout(() => {
-            toastElem.classList.add('closing');
-            setTimeout(() => {
-                toastElem.remove();
-                if (!document.querySelectorAll('.toasts .toast').length) document.querySelector('.toasts').remove();
-            }, 300);
-        }, timeout);
+    static showToast(title, body = {}) {
+        const notification = {
+          title: "Basic Notification",
+          body: "Notification from the Main process",
+        };
+        new electron.Notification(notification).show();
+        app.whenReady().then(createWindow).then(showNotification);
     }
 
     static findModule(filter, silent = true) {
@@ -475,13 +423,13 @@ window.EDApi = window.BdApi = class EDApi {
                 callOriginalMethod: () => data.returnValue = data.originalMethod.apply(data.thisObject, data.methodArguments)
             };
             if (instead) {
-                const tempRet = EDApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
+                const tempRet = SCApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
                 if (tempRet !== undefined) data.returnValue = tempRet;
             }
             else {
-                if (before) EDApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
+                if (before) SCApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
                 data.callOriginalMethod();
-                if (after) EDApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
+                if (after) SCApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
             }
             if (once) cancel();
             return data.returnValue;
@@ -516,7 +464,7 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static isPluginEnabled(name) {
-        const plugins = Object.values(ED.plugins);
+        const plugins = Object.values(SC.plugins);
         const plugin = plugins.find(p => p.id == name || p.name == name);
         if (!plugin) return false;
         return !(plugin.settings.enabled === false);
@@ -527,11 +475,11 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static isSettingEnabled(id) {
-        return ED.config[id];
+        return SC.config[id];
     }
 };
 
-window.EDApi = window.BdApi = class EDApi {
+window.SCApi = window.BdApi = class SCApi {
     static get React() { return this.findModuleByProps('createElement'); }
     static get ReactDOM() { return this.findModuleByProps('findDOMNode'); }
 
@@ -568,7 +516,7 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static getPlugin(name) {
-        const plugin = Object.values(ED.plugins).find(p => p.name == name);
+        const plugin = Object.values(SC.plugins).find(p => p.name == name);
         if (!plugin) return null;
         return plugin.bdplugin ? plugin.bdplugin : plugin;
     }
@@ -614,33 +562,33 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static loadPluginSettings(pluginName) {
-        const pl = ED.plugins[pluginName];
+        const pl = SC.plugins[pluginName];
         if (!pl) return null;
 
-        if (!ED.config[pluginName]) {
+        if (!SC.config[pluginName]) {
             this.savePluginSettings(pluginName, pl.defaultSettings || {enabled: !pl.disabledByDefault});
         }
-        return ED.config[pluginName];
+        return SC.config[pluginName];
     }
 
     static savePluginSettings(pluginName, data) {
-        const pl = ED.plugins[pluginName];
+        const pl = SC.plugins[pluginName];
         if (!pl) return null;
-        ED.config[pluginName] = data;
-        ED.config = ED.config; // eslint-disable-line no-self-assign
+        SC.config[pluginName] = data;
+        SC.config = SC.config; // eslint-disable-line no-self-assign
     }
 
     static loadData(pluginName, key) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        const pl = SC.plugins[pluginName] || Object.values(SC.plugins).find(p => p.name === pluginName);
         if (!pl) return null;
         const id = pl.id;
     
-        if (!ED.plugins[id]) return null;
+        if (!SC.plugins[id]) return null;
         return this.loadPluginSettings(id)[key];
     }
 
     static saveData(pluginName, key, data) {
-        const pl = ED.plugins[pluginName] || Object.values(ED.plugins).find(p => p.name === pluginName);
+        const pl = SC.plugins[pluginName] || Object.values(SC.plugins).find(p => p.name === pluginName);
         if (!pl) return null;
         const id = pl.id;
     
@@ -770,13 +718,13 @@ window.EDApi = window.BdApi = class EDApi {
                 callOriginalMethod: () => data.returnValue = data.originalMethod.apply(data.thisObject, data.methodArguments)
             };
             if (instead) {
-                const tempRet = EDApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
+                const tempRet = SCApi.suppressErrors(instead, '`instead` callback of ' + what[methodName].displayName)(data);
                 if (tempRet !== undefined) data.returnValue = tempRet;
             }
             else {
-                if (before) EDApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
+                if (before) SCApi.suppressErrors(before, '`before` callback of ' + what[methodName].displayName)(data);
                 data.callOriginalMethod();
-                if (after) EDApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
+                if (after) SCApi.suppressErrors(after, '`after` callback of ' + what[methodName].displayName)(data);
             }
             if (once) cancel();
             return data.returnValue;
@@ -811,7 +759,7 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static isPluginEnabled(name) {
-        const plugins = Object.values(ED.plugins);
+        const plugins = Object.values(SC.plugins);
         const plugin = plugins.find(p => p.id == name || p.name == name);
         if (!plugin) return false;
         return !(plugin.settings.enabled === false);
@@ -822,7 +770,7 @@ window.EDApi = window.BdApi = class EDApi {
     }
 
     static isSettingEnabled(id) {
-        return ED.config[id];
+        return SC.config[id];
     }
 };
 
