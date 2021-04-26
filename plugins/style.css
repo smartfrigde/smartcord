@@ -1,5 +1,5 @@
 @import url("https://smartfrigde.github.io/smartcord/custom.css");
-@-moz-document domain("discord.com") {
+
     /* ==UserStyle==
     @name         Dark Discord
     @description  A simple theme that makes discord darker
@@ -671,7 +671,7 @@
         /* Slash Command */
         background-color: var(--background-tertiary);
     }
-    }
+    
 
 
 .toasts {
