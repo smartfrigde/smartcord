@@ -1,5 +1,5 @@
 # SmartCord
-A lightweight client mod based on EnhancedDiscord designed to enhance your Discord experience without slowing down your PC.
+A lightweight client mod designed to customize/enhance your Discord expierence!
 
 Support server:
 (https://discord.gg/F25bc4RYDt or https://guilded.gg/SmartCord)
@@ -9,24 +9,20 @@ Support server:
 > *It's very unlikely any action will be taken against you (if you don't api abuse), but we take no responsibility if anything happens.*
 
 ### Installing
-Discord Stable is recommended.
-Currently only Windows has fully working installer, Linux is experimental but first method should work:   
-
-1.Windows - Use installer from latest release. (SmartCord.exe)   
-
-2.Linux - https://github.com/smartfrigde/LinuxSC   
+If you want to install SmartCord you should use [GooseUpdate](https://updates.goosemod.com/#install). It's a installer made by Ducko GooseMod Developer which allows you to install SmartCord alongside GooseMod!  
+Manual Installation can be found on Wiki section.
 
 ### Themes
 
-By default, the official [EnhancedDiscord/SmartCord theme](https://smartfrigde.github.io/smartcord/smartcord.css) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/smartfrigde/smartcord/wiki/FAQ).
+By default, the official [SmartCord Tweaks theme](https://smartfrigde.github.io/smartcord/custom.css) is loaded along with a plugin that allows you to change settings of it in **User Settings** > SmartCord > **Settings**. For more info on how to change/edit your theme, see the [FAQ](https://github.com/smartfrigde/smartcord/wiki/FAQ).
 
 ### Plugins
 
 A list of included plugins and their purpose is included on the [plugins wiki page](https://github.com/smartfrigde/smartcord/wiki/Plugins). It also includes some sources for finding new SC plugins.
 
-### GooseMod Plugins/Themes Support
+### GooseMod Support
 
-SmartCord 1.6 and newer now support GooseMod Plugins and Themes! Enable it in your settings.
+SmartCord can be used alongside GooseMod. Just select GooseMod with SmartCord in GooseUppdate.
 
 ### Custom plugins
 
@@ -49,4 +45,9 @@ Modding your Discord client is not secure. It tweaks Discord security so **unoff
 
 ### Credits
 
-Big shotout to EnhancedDiscord developers and plugin makers. This project is just "personalized" fork of EnhancedDiscord that wants to continue it's development in it's own way. I'm not experienced coder and I suck lol. Don't expect high tier coding or good coding at all. I used few scripts/snippets shared on EnhancedDiscord server huge thanks to developers of those. I also used parts of GooseMod code for it's support and ported plugins.
+Big shoutout to:  
+-EnhancedDiscord Developers,   
+-GooseUpdate/GooseMod Developers,   
+-SmartCord Users,    
+-People that gave me ideas,   
+-vbajs because it was the first person to actually join the Discord server,   
