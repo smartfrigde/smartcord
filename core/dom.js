@@ -102,7 +102,7 @@ SC.localStorage = window.localStorage;
 
 process.once('loaded', async () => {
     c.log(`v${SC.version} is running. Validating plugins...`);
-
+    require('./settings.js')
     const pluginFiles = fs.readdirSync(path.join(process.env.injDir, 'plugins'));
     const plugins = {};
     for (const i in pluginFiles) {
@@ -110,6 +110,7 @@ process.once('loaded', async () => {
         let p;
         const pName = pluginFiles[i].replace(/\.js$/, '');
         try {
+            require("./pluginScanner.js")
             p = require(path.join(process.env.injDir, 'plugins', pName));
             if (typeof p.name !== 'string' || typeof p.load !== 'function') {
                 throw new Error('Plugin must have a name and load() function.');
@@ -131,8 +132,13 @@ process.once('loaded', async () => {
 
     // work-around to wait for webpack
     while (true) {
-        await c.sleep(1000);
-        if(electron.webFrame.top.context.window && electron.webFrame.top.context.window.webpackJsonp) break;
+    require("electron").webFrame.executeJavaScript(`new Promise(resolve => {
+            const check = function() {
+                if (window.webpackJsonp && window.webpackJsonp.flat().flat().length >= 7000) return resolve();
+                setTimeout(check, 100);
+            };
+            check();
+        });`); break
     };
     
     SC.webSocket = window._ws;
