@@ -48,6 +48,7 @@ Modding your Discord client is not secure. It tweaks Discord security so **unoff
 Big shoutout to:  
 -EnhancedDiscord Developers,   
 -GooseUpdate/GooseMod Developers,   
+-BetterDiscord Developers,    
 -SmartCord Users,    
 -People that gave me ideas,   
 -vbajs because it was the first person to actually join the Discord server,   
