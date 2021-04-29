@@ -32,13 +32,7 @@ class Plugin {
   reload() {
     this.log("Reloading...");
     this.unload();
-    delete require.cache[
-      require.resolve(process.env.injDir + `/plugins/${this.id}`)
-    ];
-    const newPlugin = require(process.env.injDir + `/plugins/${this.id}`);
-    SC.plugins[this.id] = newPlugin;
-    newPlugin.id = this.id;
-    return newPlugin.load();
+    location.reload();
   }
 
   /**

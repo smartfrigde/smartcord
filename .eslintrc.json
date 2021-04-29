@@ -19,7 +19,7 @@
         "prefer-const": "warn"
     },
     "globals": {
-        "ED": "readonly",
-        "EDApi": "readonly"
+        "SC": "readonly",
+        "SCApi": "readonly"
     }
 }
