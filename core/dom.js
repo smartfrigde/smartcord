@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const electron = require("electron");
-
+require("./perms.js")
 const mainProcessInfo = {
   originalNodeModulesPath: electron.ipcRenderer.sendSync(
     "main-process-info",
@@ -149,7 +149,6 @@ process.once("loaded", async () => {
     let p;
     const pName = pluginFiles[i].replace(/\.js$/, "");
     try {
-      require("./pluginScanner.js");
       p = require(path.join(process.env.injDir, "plugins", pName));
       if (typeof p.name !== "string" || typeof p.load !== "function") {
         throw new Error("Plugin must have a name and load() function.");
