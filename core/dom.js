@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const electron = require("electron");
-require("./perms.js")
+
 const mainProcessInfo = {
   originalNodeModulesPath: electron.ipcRenderer.sendSync(
     "main-process-info",
