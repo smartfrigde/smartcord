@@ -13,7 +13,7 @@ module.exports = new Plugin({
     color: '#7289da',
 
     defaultSettings: {
-        branch: 'main',
+        branch: 'Stable',
         auto_check: true,
         auto_update: true,
         notify: true,
