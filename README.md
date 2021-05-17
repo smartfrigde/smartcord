@@ -1,5 +1,5 @@
 # SmartCord
-A lightweight client mod based on EnhancedDiscord designed to enhance your Discord experience without slowing down your PC.
+Client mod based on EnhancedDiscord designed to enhance your Discord experience without slowing down your PC.
 
 Support server:
 (https://discord.gg/F25bc4RYDt or https://guilded.gg/SmartCord)
@@ -9,7 +9,7 @@ Support server:
 > *It's very unlikely any action will be taken against you (if you don't api abuse), but we take no responsibility if anything happens.*
 
 ### Installing
-If you want to install SmartCord you should use [GooseUpdate](https://updates.goosemod.com/#install). It's a installer made by Ducko GooseMod Developer which allows you to install SmartCord alongside GooseMod!  
+If you want to install SmartCord you should use [GooseUpdate Web Installer](https://updates.goosemod.com/#install) or [Mallard](https://github.com/uwu/Mallard/releases).   
 Manual Installation can be found on Wiki section.
 
 ### Themes
