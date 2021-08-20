@@ -37,7 +37,7 @@ function hook(patchId, args, context) {
   var iterationDone = false;
   var previousResponse;
 
-  const hooks = SC.patcher.patches[patchId]["hooks"]
+  const hooks = SC.api.patches[patchId]["hooks"]
   for (const hookId in hooks) {
     const hook = hooks[hookId];
     if (hook.runInstead) {
@@ -45,7 +45,7 @@ function hook(patchId, args, context) {
       iterationDone = true;
     } else {
       if (!iterationDone) {
-        previousResponse = SC.patcher.patches[patchId].originalFunction.call(context, ...args);
+        previousResponse = SC.api.patches[patchId].originalFunction.call(context, ...args);
         iterationDone = true;
       }
 
@@ -61,7 +61,7 @@ function hook(patchId, args, context) {
 }
 
 function unpatch(patchId, hookId) {
-  const patch = SC.patcher.patches[patchId];
+  const patch = SC.api.patches[patchId];
   var unpatched = false;
 
   if (patch) {
@@ -73,8 +73,8 @@ function unpatch(patchId, hookId) {
         patch.functionParent[patch.functionName] = patch.originalFunction;
         patch.functionParent.SmartCord_INJECTIONS[patch.functionName] = undefined;
         delete patch.functionParent.SmartCord_INJECTIONS[patch.functionName];
-        SC.patcher.patches[patchId] = undefined;
-        delete SC.patcher.patches[patchId];
+        SC.api.patches[patchId] = undefined;
+        delete SC.api.patches[patchId];
       }
 
       return true;
@@ -88,8 +88,8 @@ function unpatchAll() {
   logger.log(
     "If you're a plugin developer and you ran this because you're curious as to what it does, I highly recommend you refresh your client because unfortunately everything that relies on the patcher has been unpatched."
   );
-  for (const patch in SC.patcher.patches) {
-    const hooks = SC.patcher.patches[patch]["hooks"];
+  for (const patch in SC.api.patches) {
+    const hooks = SC.api.patches[patch]["hooks"];
     for (const hook in hooks) {
       unpatch(patch, hook);
     }
@@ -120,10 +120,10 @@ function patch(functionName, functionParent, callback, runInstead = false) {
 
   const injectionId = functionParent.SmartCord_INJECTIONS[functionName];
 
-  if (!SC.patcher.patches[injectionId]) {
+  if (!SC.api.patches[injectionId]) {
     const originalFunction = Object.assign({}, functionParent)[functionName];
 
-    SC.patcher.patches[injectionId] = {
+    SC.api.patches[injectionId] = {
       originalFunction,
       functionParent,
       functionName,
@@ -134,7 +134,7 @@ function patch(functionName, functionParent, callback, runInstead = false) {
   }
 
   const hookId = uuidv4();
-  SC.patcher.patches[injectionId].hooks[hookId] = {
+  SC.api.patches[injectionId].hooks[hookId] = {
     runInstead,
     callback,
   };
