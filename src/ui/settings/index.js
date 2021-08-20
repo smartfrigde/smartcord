@@ -4,7 +4,7 @@ import Plugins from "./components/info.jsx";
 
 export function initializeSettings() {
     // All patcher.injectCSS calls are uninjected when sc.uninject() is called, so this is never changed
-    patcher.injectCSS(`
+    SCApi.injectCSS(`
     .sc-plugin-card {
       padding: 16px;
       margin-bottom: 10px;
