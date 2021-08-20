@@ -1,0 +1,22 @@
+{
+  "name": "smartcord",
+  "version": "2.0.0",
+  "description": "Client mod designed to enhance your Discord experience without slowing down your PC.",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -cw"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.smartfridge.ml/smartfridge/SmartCord.git"
+  },
+  "author": "smartfridge",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@babel/core": "^7.15.0",
+    "@babel/preset-react": "^7.14.5",
+    "@rollup/plugin-babel": "^5.3.0",
+    "rollup-plugin-serve": "^1.1.0"
+  }
+}
