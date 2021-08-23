@@ -15,6 +15,6 @@ If you want to install SmartCord you should figure it out yourself since we don'
 Feel free to make pull requests or make your own plugins repository. If you do make your own plugins, request the 'Plugin Developer' role in the support server so you can announce your releases!
 
 ### Credits
-[GooseMod](https://github.com/GooseMod/GooseMod)
-[Cumcord](https://github.com/Cumcord/Cumcord/)
-[BandagedBD (BD before license change)](https://github.com/BetterDiscord/BetterDiscord/tree/legacy)
+[GooseMod](https://github.com/GooseMod/GooseMod)   
+[Cumcord](https://github.com/Cumcord/Cumcord/)     
+[BandagedBD (BD before license change)](https://github.com/BetterDiscord/BetterDiscord/tree/legacy)     
